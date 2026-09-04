@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công Cụ Báo Giá SmartHome ASEL</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Sử dụng Babel 7 để hỗ trợ cú pháp hiện đại (Optional Chaining) -->
+    <script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        @media print {
+            @page { margin: 10mm; }
+            body { 
+                background-color: white !important; 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .print-hidden, .no-print { display: none !important; }
+            .print-no-shadow { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; }
+            
+            textarea, input {
+                border: none !important;
+                background: transparent !important;
+                resize: none !important;
+                overflow: hidden !important;
+                outline: none !important;
+                box-shadow: none !important;
+            }
+            textarea:empty, input:empty { display: none !important; }
+            textarea::placeholder, input::placeholder { color: transparent !important; }
+            
+            /* Chống cắt đôi dòng khi in */
+            tr, td, th, .avoid-break { 
+                page-break-inside: avoid !important; 
+                break-inside: avoid !important;
+            }
+            .page-break-before { page-break-before: always !important; }
+            
+            html, body { height: auto !important; min-height: auto !important; }
+            .print-container { min-height: 0 !important; height: auto !important; padding: 0 !important; background-color: white !important;}
+        }
+
+        /* Giao diện khung A4 xem trước */
+        .a4-preview-portrait { width: 210mm; min-height: 297mm; margin: 0 auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); padding: 10mm; }
+        .a4-preview-landscape { width: 297mm; min-height: 210mm; margin: 0 auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); padding: 10mm; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        const { useState, useRef, useMemo, useEffect, Fragment } = React;
+
+        const Icon = ({ name, className = "w-4 h-4" }) => {
+            const icons = {
+                'x': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+                'image': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>,
+                'plus': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+                'printer': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>,
+                'download': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
+                'upload': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>,
+                'trash-2': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>,
+                'info': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            };
+            return icons[name] || null;
+        };
+
+        const EditableInput = ({ value, onChange, placeholder = "", className = "", isTextArea = false, isEditing = true }) => {
+            if (isTextArea) {
+                return (
+                    <Fragment>
+                        <textarea
+                            value={value || ''}
+                            onChange={e => onChange(e.target.value)}
+                            placeholder={placeholder}
+                            className={`w-full bg-transparent border-none focus:ring-1 focus:ring-blue-500 resize-none outline-none overflow-hidden ${className} ${!isEditing ? 'hidden' : 'block'}`}
+                            rows={1}
+                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                        />
+                        <div className={`whitespace-pre-wrap ${className} ${!isEditing ? 'block' : 'hidden'}`}>
+                            {value}
+                        </div>
+                    </Fragment>
+                );
+            }
+            return (
+                <Fragment>
+                    <input
+                        type="text"
+                        value={value || ''}
+                        onChange={e => onChange(e.target.value)}
+                        placeholder={placeholder}
+                        className={`w-full bg-transparent border-none focus:ring-1 focus:ring-blue-500 outline-none ${className} ${!isEditing ? 'hidden' : 'block'}`}
+                    />
+                    <div className={`${className} ${!isEditing ? 'block' : 'hidden'}`}>
+                        {value}
+                    </div>
+                </Fragment>
+            );
+        };
+
+        const ImageUpload = ({ value, onChange, isEditing = true, sku = null }) => {
+            const fileInputRef = useRef(null);
+            const [imgError, setImgError] = useState(false);
+
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => { onChange(reader.result); setImgError(false); };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            // Xác định xem có nên hiển thị khung "Tải ảnh" hay không
+            const showUploadPlaceholder = !value && (!sku || imgError);
+
+            return (
+                <div className="flex flex-col items-center justify-center w-full h-full min-h-[60px]">
+                    {/* Hiển thị ảnh nếu có value (người dùng tự up) */}
+                    {value ? (
+                        <div className={`relative group w-full h-full flex items-center justify-center`}>
+                            <img src={value} alt="Uploaded" className="max-w-full max-h-[80px] object-contain" />
+                            <button onClick={() => onChange('')} className={`absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity print-hidden no-print ${isEditing ? 'block' : 'hidden'}`} title="Xóa ảnh">
+                                <Icon name="x" className="w-3 h-3" />
+                            </button>
+                        </div>
+                    ) : (sku && !imgError) ? (
+                        /* Nếu không có up tay, tự động tìm ảnh GitHub bằng SKU */
+                        <div className={`w-full h-full flex items-center justify-center`}>
+                            <img src={`images/${sku}.png`} onError={() => setImgError(true)} alt={sku} className="max-w-full max-h-[80px] object-contain" />
+                        </div>
+                    ) : null}
+
+                    {/* Khung tải ảnh hiển thị khi chỉnh sửa và không có ảnh nào */}
+                    <div onClick={() => fileInputRef.current?.click()} className={`cursor-pointer flex flex-col items-center justify-center text-gray-400 hover:text-blue-500 print-hidden no-print border border-dashed border-gray-300 rounded p-1 w-full h-full ${showUploadPlaceholder && isEditing ? 'flex' : 'hidden'}`}>
+                        <Icon name="image" className="w-4 h-4" />
+                        <span className="text-[10px] mt-1 text-center">Tải ảnh</span>
+                    </div>
+
+                    <div className={`w-full h-full min-h-[60px] ${(showUploadPlaceholder && !isEditing) ? 'block' : 'hidden'}`}></div>
+                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                </div>
+            );
+        };
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('summary');
+            const [exchangeRate, setExchangeRate] = useState(25400);
+            const [currency, setCurrency] = useState('USD');
+            const [includeAudio, setIncludeAudio] = useState(true);
+            const [isPreview, setIsPreview] = useState(false);
+            const [printLayout, setPrintLayout] = useState('portrait'); 
+            const [notification, setNotification] = useState('');
+            
+            // Theo dõi thay đổi chưa lưu
+            const [isDirty, setIsDirty] = useState(false);
+            const [initialLoad, setInitialLoad] = useState(true);
+
+            // Tự động set Ngày Hôm Nay
+            const getTodayDate = () => {
+                const today = new Date();
+                return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+            };
+
+            const [headerInfo, setHeaderInfo] = useState({
+                logo: '',
+                projectName: 'Biệt thự gia đình',
+                owner: 'Chú Hướng',
+                location: 'Củ Chi',
+                plan: '1',
+                consultant: 'Trần Thu Trang',
+                phone: '0869326776',
+                email: 'trang.tt@asel.vn',
+                date: getTodayDate(),
+                introText: 'ASEL VIỆT NAM xin trân trọng gửi tới Quý khách hàng dự toán chi tiết giải pháp như sau:'
+            });
+
+            // Lắng nghe sự kiện trước khi tắt Tab (Chống mất dữ liệu)
+            useEffect(() => {
+                const handleBeforeUnload = (e) => {
+                    if (isDirty) {
+                        e.preventDefault();
+                        e.returnValue = ''; // Yêu cầu chuẩn của trình duyệt để hiện Popup cảnh báo
+                    }
+                };
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+            }, [isDirty]);
+
+            // Auto set CSS cho máy in
+            useEffect(() => {
+                let styleEl = document.getElementById('print-page-style');
+                if (!styleEl) {
+                    styleEl = document.createElement('style');
+                    styleEl.id = 'print-page-style';
+                    document.head.appendChild(styleEl);
+                }
+                styleEl.innerHTML = `@page { size: A4 ${printLayout}; margin: 10mm; }`;
+            }, [printLayout]);
+
+            const formatMoney = (amount) => {
+                if (!amount) return '0';
+                const num = parseFloat(amount) || 0;
+                if (currency === 'VND') {
+                    return (num * exchangeRate).toLocaleString('vi-VN');
+                }
+                return num.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            };
+
+            const [bomMap, setBomMap] = useState({
+                floors: [
+                    { id: 'tret', name: 'Tầng Trệt' },
+                    { id: 't1', name: 'Tầng 1' },
+                    { id: 't2', name: 'Tầng áp mái' }
+                ],
+                items: [
+                    { id: 'i1', category: 'I', categoryName: 'CHIẾU SÁNG', name: 'Bộ đóng cắt 8 kênh Din8s8wi', desc: 'Bộ điều khiển chiếu sáng 8 kênh. Kết hợp đầu vào cho nút công tắc.\nCông suất 10A / 1 kênh.\nHỗ trợ đóng cắt tải 120 đến 240 Volt 50/60 Hz.', brand: 'CRESTRON - USA/MEXICO', unit: 'Bộ', price: 660, quantities: { tret: 3, t1: 2, t2: 3 }, isDinController: true },
+                    { id: 'i2', category: 'I', categoryName: 'CHIẾU SÁNG', name: 'Bộ điều khiển đèn Dali Din Dli', desc: '1 kênh điều khiển, mỗi kênh lên đến 64 drivers.\nCó thể điều khiển từng bóng hoặc group nhiều đèn linh hoạt trong việc điều khiển kịch bản.', brand: 'CRESTRON - USA/MEXICO', unit: 'Bộ', price: 1000, quantities: { tret: 1, t1: 1, t2: 1 } },
+                    { id: 'i3', category: 'I', categoryName: 'CHIẾU SÁNG', name: 'Cảm biến gắn trần', desc: '(đã bao gồm relay Omron 220V) tích hợp điện thông minh cài đặt chuyên sâu theo khung giờ và điều chỉnh cường độ sáng đèn dimmer.\nGóc quét 360°, bán kính quét tối đa 4.5m.\nCó thể điều chỉnh độ nhạy và thời gian bật tắt.\nCài đặt và hiệu chỉnh bằng Remote.', brand: 'THEBEN GERMANY-EU', unit: 'Chiếc', price: 135, quantities: { tret: 5, t1: 4, t2: 6 }, isInput: true },
+                    { id: 'i4', category: 'I', categoryName: 'CHIẾU SÁNG', name: 'Cảm biến cầu thang', desc: '(đã bao gồm relay Omron 220V) tích hợp điện thông minh cài đặt chuyên sâu theo khung giờ và điều chỉnh cường độ sáng đèn dimmer.\nGóc quét 170°, bán kính quét tối đa 6m.\nCó thể điều chỉnh độ nhạy và thời gian bật tắt.', brand: 'THEBEN GERMANY-PRC', unit: 'Chiếc', price: 150, quantities: { tret: 1, t1: 0, t2: 0 }, isInput: true },
+                    
+                    { id: 'r1', category: 'II', categoryName: 'RÈM', name: 'Bộ đóng cắt cho rèm Din8s8wi', desc: 'Bộ điều khiển rèm động cơ.\nCông suất 10A / 1 kênh.\nHỗ trợ đóng cắt tải 120 đến 240 Volt 50/60 Hz.', brand: 'CRESTRON - USA/MEXICO', unit: 'Bộ', price: 660, quantities: { tret: 3, t1: 1, t2: 1 }, isDinController: true },
+                    
+                    { id: 'p1', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Màn hình cảm ứng 10 inch', desc: 'Màn hình cảm ứng gắn tường chuyên dụng loại 10 inch nguồn POE, đi dây cố định, công nghệ cảm ứng điện dung. Hiển thị hình ảnh chuẩn HD.\nĐiều khiển và mô phỏng trực quan tổng thể hệ thống, kết nối chuông hình.\nCảm ứng tiệm cận khi đến gần tự động sáng màn hình.', brand: 'CRESTRON - USA/MEXICO', unit: 'Chiếc', price: 4500, quantities: { tret: 1, t1: 0, t2: 0 } },
+                    { id: 'p2', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Key pad', desc: 'Keypad Phím bấm thông minh gắn tường - Phím vuông.\nKết hợp cảm biến ánh sáng khi trời tối nút bấm sẽ phát sáng.\nCó 2,4,6,8 hoặc 10 nút. Mỗi nút lập trình được nhiều chức năng, có chế độ ấn và ấn giữ.', brand: 'CRESTRON - USA/MEXICO', unit: 'Chiếc', price: 580, quantities: { tret: 2, t1: 2, t2: 4 } },
+                    { id: 'p3', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Phím Pico loại 4 nút', desc: 'Công tắc không dây Pico 4 nút, biểu tượng đèn.\nLoại gắn tường, 1 cột 4 nút chức năng.', brand: 'LUTRON - USA/PRC', unit: 'Chiếc', price: 115, quantities: { tret: 0, t1: 1, t2: 1 } },
+                    { id: 'p4', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Phím Pico loại 8 nút', desc: 'Công tắc không dây Pico 8 nút, biểu tượng đèn.\nLoại để bàn, 2 cột 4 nút chức năng.', brand: 'LUTRON - USA/PRC', unit: 'Chiếc', price: 230, quantities: { tret: 2, t1: 0, t2: 0 } },
+                    
+                    { id: 'm1', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Công tắc cơ 4 nút', desc: '', brand: '', unit: 'Chiếc', price: 0, quantities: { tret: 2, t1: 4, t2: 5 }, isMechanical: true, buttons: 4 },
+                    { id: 'm2', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Công tắc cơ 3 nút', desc: '', brand: '', unit: 'Chiếc', price: 0, quantities: { tret: 2, t1: 1, t2: 4 }, isMechanical: true, buttons: 3 },
+                    { id: 'm3', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Công tắc cơ 2 nút', desc: '', brand: '', unit: 'Chiếc', price: 0, quantities: { tret: 2, t1: 1, t2: 1 }, isMechanical: true, buttons: 2 },
+                    { id: 'm4', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Công tắc cơ 1 nút', desc: '', brand: '', unit: 'Chiếc', price: 0, quantities: { tret: 2, t1: 1, t2: 1 }, isMechanical: true, buttons: 1 },
+                    
+                    { id: 'v1', category: 'IV', categoryName: 'An ninh', name: 'Cảm biến từ', desc: 'Cảm biến từ an ninh, báo mở cửa.', brand: 'PRC', unit: 'Chiếc', price: 8, quantities: { tret: 4, t1: 0, t2: 0 }, isInput: true },
+                    { id: 'v2', category: 'IV', categoryName: 'An ninh', name: 'Cảm biến báo cháy', desc: 'Cảm biến báo cháy phát hiện khói, nhiệt.', brand: 'PRC', unit: 'Chiếc', price: 30, quantities: { tret: 2, t1: 0, t2: 0 } },
+                    { id: 'v3', category: 'IV', categoryName: 'An ninh', name: 'Còi', desc: 'Còi báo động an ninh cường độ âm thanh cao.', brand: 'PRC', unit: 'Chiếc', price: 25, quantities: { tret: 1, t1: 0, t2: 0 } },
+                    { id: 'v4', category: 'IV', categoryName: 'An ninh', name: 'Bộ báo tin nhắn', desc: 'Nhắn tin SMS và gọi điện trực tiếp đến SĐT đăng ký.', brand: 'ASEL', unit: 'Bộ', price: 500, quantities: { tret: 1, t1: 0, t2: 0 } },
+                    
+                    { id: 'ac1', category: 'V', categoryName: 'Điều hòa', name: 'Điều khiển điều hòa VRV (Cool Master)', desc: 'Điều khiển và giám sát trạng thái thực tới cả các dàn lạnh trong nhà.\nChỉ cần đi 1 cáp dây kết nối đến dàn nóng trung tâm.\nPhản hồi 02 chiều.', brand: 'COOLAUTOMATION - ISRAEL', unit: 'Bộ', price: 3500, quantities: { tret: 1, t1: 0, t2: 0 } },
+                    
+                    { id: 'c1', category: 'VI', categoryName: 'Chuông hình', name: 'Chuông cửa IP ngoài trời', desc: 'Gắn âm, tích hợp smartphone, xem lịch sử người bấm.\nChất liệu kim loại, camera hồng ngoại. Kết hợp relay mở cổng.\nKết nối đàm thoại với màn hình cảm ứng, điện thoại thông minh từ bất cứ đâu. Góc nhìn 180°.', brand: 'DB-GERMANY', unit: 'Chiếc', price: 1500, quantities: { tret: 1, t1: 0, t2: 0 } },
+                    
+                    { id: 't1', category: 'VII', categoryName: 'Tủ điện', name: 'Bộ xử lý mạng bus IP (Din AP4)', desc: '1GB SDRAM and 8 GB flash memory.\nTốc độ xử lý vượt trội 100 Mb/s.\nHỗ trợ RS-232, RS-422, RS-485.\nHỗ trợ điều khiển thiết bị qua hồng ngoại lên đến 1.2MHz.', brand: 'CRESTRON - USA/MEXICO', unit: 'Bộ', price: 2800, quantities: { tret: 1, t1: 0, t2: 0 } },
+                    { id: 't2', category: 'VII', categoryName: 'Tủ điện', name: 'Bộ cấp nguồn hệ thống 24V', desc: 'Công suất 60W Cresnet.\nNguồn vào 100-277V AC.', brand: 'CRESTRON - USA/MEXICO', unit: 'Bộ', price: 400, quantities: { tret: 3, t1: 0, t2: 0 } },
+                    { id: 't3', category: 'VII', categoryName: 'Tủ điện', name: 'Bộ khuếch đại', desc: 'Bộ khuếch đại tín hiệu hệ thống.', brand: 'CRESTRON - USA/MEXICO', unit: 'Bộ', price: 600, quantities: { tret: 1, t1: 0, t2: 0 } },
+                    { id: 't4', category: 'VII', categoryName: 'Tủ điện', name: 'Bộ nhận tín hiệu đầu vào công tắc', desc: 'Nhận tín hiệu đầu vào từ các nút bấm cơ.', brand: 'CRESTRON - USA/MEXICO', unit: 'Bộ', price: 550, quantities: { tret: 2, t1: 0, t2: 0 } },
+                    { id: 't5', category: 'VII', categoryName: 'Tủ điện', name: 'Bộ mở rộng Lutron', desc: 'Bộ mở rộng tín hiệu không dây cho các thiết bị Lutron.', brand: 'LUTRON - USA/PRC', unit: 'Bộ', price: 400, quantities: { tret: 3, t1: 0, t2: 0 } },
+                    { id: 't6', category: 'VII', categoryName: 'Tủ điện', name: 'Vật tư phụ', desc: '(jack chuyên dụng, dây điều khiển, lạt nhựa, băng keo, đầu nối...)', brand: 'VIỆT NAM', unit: 'Gói', price: 500, quantities: { tret: 1, t1: 0, t2: 0 } },
+                    { id: 't7', category: 'VII', categoryName: 'Tủ điện', name: 'Tủ điện', desc: 'Tủ điện 2 lớp cánh, sơn tĩnh điện dày 1.5mm', brand: 'VIỆT NAM', unit: 'Bộ', price: 500, quantities: { tret: 2, t1: 0, t2: 0 } },
+                    
+                    { id: 'cp1', category: 'VIII', categoryName: 'CP - Chi phí triển khai', name: 'Thiết kế lập trình (12%)', desc: '', brand: '', unit: 'Gói', price: 0, quantities: { tret: 1, t1: 0, t2: 0 }, isImplementationCost: true, type: 'design' },
+                    { id: 'cp2', category: 'VIII', categoryName: 'CP - Chi phí triển khai', name: 'Thi công lắp đặt (13%)', desc: '', brand: '', unit: 'Gói', price: 0, quantities: { tret: 1, t1: 0, t2: 0 }, isImplementationCost: true, type: 'install' }
+                ]
+            });
+
+            const [audioData, setAudioData] = useState([
+                { id: 1, name: 'Thiết bị âm ly, nguồn nhạc', desc: 'Thiết bị nguồn phát nhạc 4 vùng độc lập tích hợp điện thông minh:\n- 01 Bộ âm ly 4 vùng độc lập kết nối nguồn nhạc, đã bao gồm phần mềm kết nối điện thông minh.\nTích hợp Airplay, truy xuất kho nhạc online, lấy nhạc từ ổ cứng NAS.\n\nGồm 4 vùng độc lập:\n- Zone 1: Phòng khách\n- Zone 2: Phòng ăn\n- Zone 3: Phòng truyền thống\n- Zone 4: Phòng tắm Master', image: '', unit: 'Bộ', qty: 1, price: 7500 },
+                { id: 2, name: 'Thiết bị loa (5.5 cặp gắn trần)', desc: '5.5 cặp loa gắn trần dòng Reference 2-Way từ Origin Acoustic\n- Frequency Response: 60 Hz to 20 kHz (±3 dB)\n- Frequency Range: 41 Hz to 20 kHz (+-10 dB)\n- Sensitivity 87 dB @ 1W/1m\n- 100 Watts, Peak 200W\n- 8 Ohms nominal impedance', image: '', unit: 'Cặp', qty: 5.5, price: 4400 },
+                { id: 3, name: 'Chi phí thi công cài đặt, cân chỉnh hệ thống âm thanh', desc: '', image: '', unit: 'Gói', qty: 1, price: 810 },
+            ]);
+
+            const [commercialTerms, setCommercialTerms] = useState([
+                { label: 'Điều kiện kỹ thuật', value: '100% Mới chưa qua sử dụng.' },
+                { label: 'Thời gian giao hàng', value: 'Từ 4-6 tuần kể từ khi ngày kí hợp đồng.' },
+                { label: 'Phương thức thanh toán', value: '50% Giá trị hợp đồng ngay sau khi ký hợp đồng.\n40% Giá trị hợp đồng sau khi bàn giao thiết bị trước khi lắp đặt.\n10% Giá trị còn lại sau khi nghiệm thu công trình.' },
+                { label: 'Hiệu lực báo giá', value: 'Trong thời hạn 30 ngày kể từ ngày báo giá.' },
+                { label: 'Phạm vi cung cấp', value: 'Tủ điện và thiết bị điều khiển trong tủ: các bộ điều khiển chiếu sáng, rèm, điều hòa, bộ xử lý, nguồn...\nPhím bấm thông minh, màn hình cảm ứng\nCác thiết bị cảm biến: chuyển động, cầu thang\nÂm ly và loa' },
+                { label: 'Không bao gồm', value: 'Thiết bị đầu cuối (thiết bị được điều khiển): Đèn, điều hòa, rèm động cơ, động cơ cổng, bơm, quạt hút\nCông tắc và ổ cắm điện thường (chủ đầu tư chọn sau)\nCamera (bên ME cấp). Smart home tích hợp miễn phí tất cả các hãng camera IP\nChi phí vật tư và nhân công thi công, ống, dây (dây điện, dây điều khiển, dây loa)' }
+            ]);
+
+            // Set isDirty on any state change after initial load
+            useEffect(() => {
+                if (!initialLoad) setIsDirty(true);
+                else setInitialLoad(false);
+            }, [bomMap, headerInfo, audioData, commercialTerms, exchangeRate, currency, includeAudio]);
+
+            const hardwareTotal = useMemo(() => {
+                return bomMap.items.reduce((sum, item) => {
+                    if (item.isImplementationCost) return sum;
+                    const totalQty = bomMap.floors.reduce((qSum, f) => qSum + (parseFloat(item.quantities[f.id]) || 0), 0);
+                    return sum + (totalQty * (parseFloat(item.price) || 0));
+                }, 0);
+            }, [bomMap]);
+
+            const implementationCosts = useMemo(() => {
+                return { design: hardwareTotal * 0.12, install: hardwareTotal * 0.13 };
+            }, [hardwareTotal]);
+
+            const ioCalculations = useMemo(() => {
+                const calc = { floors: {}, total: { input: 0, dinNeed: 0, dinReported: 0, missing: 0 } };
+                bomMap.floors.forEach(f => { calc.floors[f.id] = { input: 0, dinReported: 0, dinNeed: 0, missing: 0 }; });
+
+                bomMap.items.forEach(item => {
+                    const isInputDevice = item.isInput || item.id.includes('v1');
+                    const isMechanical = item.isMechanical;
+                    const buttons = item.buttons || 1;
+                    const isDinController = item.isDinController;
+
+                    bomMap.floors.forEach(f => {
+                        const qty = parseFloat(item.quantities[f.id]) || 0;
+                        if (isInputDevice) {
+                            calc.floors[f.id].input += qty;
+                            calc.total.input += qty;
+                        } else if (isMechanical) {
+                            const inputs = qty * buttons;
+                            calc.floors[f.id].input += inputs;
+                            calc.total.input += inputs;
+                        }
+
+                        if (isDinController) {
+                            calc.floors[f.id].dinReported += qty;
+                            calc.total.dinReported += qty;
+                        }
+                    });
+                });
+
+                bomMap.floors.forEach(f => {
+                    calc.floors[f.id].dinNeed = Math.ceil(calc.floors[f.id].input / 8);
+                    const diff = calc.floors[f.id].dinReported - calc.floors[f.id].dinNeed;
+                    calc.floors[f.id].missing = diff < 0 ? Math.abs(diff) : 0;
+                });
+
+                calc.total.dinNeed = Math.ceil(calc.total.input / 8);
+                const totalDiff = calc.total.dinReported - calc.total.dinNeed;
+                calc.total.missing = totalDiff < 0 ? Math.abs(totalDiff) : 0;
+
+                return calc;
+            }, [bomMap]);
+
+            const detailedData = useMemo(() => {
+                let floorsData = [];
+                bomMap.floors.forEach(f => {
+                    let systemsMap = {};
+                    bomMap.items.forEach(item => {
+                        const qty = parseFloat(item.quantities[f.id]) || 0;
+                        if (qty > 0 && !item.isMechanical && !item.isImplementationCost) {
+                            const isCommonSystem = ['IV', 'V', 'VI', 'VII'].includes(item.category);
+                            if (!isCommonSystem) {
+                                const sysName = `${item.categoryName}`;
+                                if (!systemsMap[sysName]) systemsMap[sysName] = { id: sysName, name: sysName, items: [] };
+                                systemsMap[sysName].items.push({ ...item, qty, total: qty * item.price });
+                            }
+                        }
+                    });
+                    if (Object.keys(systemsMap).length > 0) {
+                        floorsData.push({ id: f.id, name: f.name, systems: Object.values(systemsMap) });
+                    }
+                });
+
+                let commonSystemsMap = {};
+                bomMap.items.forEach(item => {
+                    const isCommonSystem = ['IV', 'V', 'VI', 'VII'].includes(item.category);
+                    if (isCommonSystem && !item.isMechanical && !item.isImplementationCost) {
+                        const totalQty = bomMap.floors.reduce((sum, f) => sum + (parseFloat(item.quantities[f.id]) || 0), 0);
+                        if (totalQty > 0) {
+                            const sysName = `${item.categoryName}`;
+                            if (!commonSystemsMap[sysName]) commonSystemsMap[sysName] = { id: sysName, name: sysName, items: [] };
+                            commonSystemsMap[sysName].items.push({ ...item, qty: totalQty, total: totalQty * item.price });
+                        }
+                    }
+                });
+                if (Object.keys(commonSystemsMap).length > 0) {
+                    floorsData.push({ id: 'common', name: 'HỆ THỐNG CHUNG', systems: Object.values(commonSystemsMap) });
+                }
+                return floorsData;
+            }, [bomMap]);
+
+            const showNotification = (msg) => {
+                setNotification(msg);
+                setTimeout(() => setNotification(''), 3000);
+            };
+
+            const handleExportData = () => {
+                const dataToSave = { headerInfo, bomMap, audioData, commercialTerms, includeAudio, exchangeRate, currency };
+                const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `BaoGia_${headerInfo.owner.replace(/\s+/g, '_')}_${getTodayDate().replace(/\//g, '')}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                setIsDirty(false); // Lưu xong thì xóa cờ báo bẩn
+                showNotification("Đã lưu file dự án thành công!");
+            };
+
+            const handleImportData = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        if (parsed.headerInfo) {
+                            // Ghi đè ngày cập nhật thành ngày hôm nay
+                            setHeaderInfo({...parsed.headerInfo, date: getTodayDate()});
+                        }
+                        if (parsed.bomMap) setBomMap(parsed.bomMap);
+                        if (parsed.audioData) setAudioData(parsed.audioData);
+                        if (parsed.commercialTerms) setCommercialTerms(parsed.commercialTerms);
+                        if (parsed.includeAudio !== undefined) setIncludeAudio(parsed.includeAudio);
+                        if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
+                        if (parsed.currency) setCurrency(parsed.currency);
+                        setIsDirty(false);
+                        showNotification("Mở file dự án thành công!");
+                    } catch (err) {
+                        showNotification("Lỗi: File không hợp lệ hoặc sai định dạng!");
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = ''; 
+            };
+
+            const updateBOMQuantity = (floorId, itemId, newQtyStr) => {
+                const qty = parseFloat(newQtyStr);
+                const finalQty = isNaN(qty) ? '' : qty;
+                setBomMap(prev => {
+                    const newItems = prev.items.map(item => {
+                        if (item.id === itemId) return { ...item, quantities: { ...item.quantities, [floorId]: finalQty } };
+                        return item;
+                    });
+                    return { ...prev, items: newItems };
+                });
+            };
+
+            const addFloor = () => {
+                const newId = `t${bomMap.floors.length + 1}`;
+                setBomMap(prev => {
+                    let newFloors = [...prev.floors];
+                    newFloors.push({ id: newId, name: `Tầng ${prev.floors.length + 1}` });
+                    return { ...prev, floors: newFloors };
+                });
+            };
+
+            const removeFloor = (floorId) => {
+                setBomMap(prev => ({ ...prev, floors: prev.floors.filter(f => f.id !== floorId) }));
+            };
+
+            const deleteItemFromDetail = (floorId, itemId) => {
+                updateBOMQuantity(floorId, itemId, 0); 
+            };
+
+            const deleteItemFromBOM = (itemId) => {
+                setBomMap(prev => ({ ...prev, items: prev.items.filter(item => item.id !== itemId) }));
+            };
+
+            const addNewItemToBOM = (categoryKey, categoryName) => {
+                const newItemId = `sp_${Date.now()}`;
+                const newItem = {
+                    id: newItemId,
+                    category: categoryKey,
+                    categoryName: categoryName,
+                    name: 'Tên thiết bị mới',
+                    desc: '', brand: '', unit: 'Chiếc', price: 0, quantities: {}
+                };
+                bomMap.floors.forEach(f => newItem.quantities[f.id] = '');
+                
+                // Chèn vào cuối danh sách của hạng mục đó
+                setBomMap(prev => {
+                    let newItems = [...prev.items];
+                    let insertIndex = newItems.map(i => i.category).lastIndexOf(categoryKey);
+                    if (insertIndex !== -1) {
+                        newItems.splice(insertIndex + 1, 0, newItem);
+                    } else {
+                        newItems.push(newItem);
+                    }
+                    return { ...prev, items: newItems };
+                });
+                showNotification(`Đã thêm thiết bị vào Hạng mục ${categoryName}`);
+            };
+
+            const renderBOM = () => {
+                const groupedItems = bomMap.items.reduce((acc, item) => {
+                    if (!acc[item.category]) acc[item.category] = { categoryName: item.categoryName, items: [] };
+                    acc[item.category].items.push(item);
+                    return acc;
+                }, {});
+
+                return (
+                    <div className="w-full">
+                        <h2 className="text-lg font-bold text-center mb-4 uppercase">BẢNG THỐNG KÊ KHỐI LƯỢNG THIẾT BỊ (BOM)</h2>
+                        <div className="overflow-x-auto">
+                            <table className="w-full border-collapse border border-black min-w-[800px] text-[12px]">
+                                <thead>
+                                    <tr className="bg-[#d5e8d4] font-bold">
+                                        <td className="border border-black p-1 text-center w-8">STT</td>
+                                        <td className="border border-black p-1 min-w-[200px]">Hạng mục</td>
+                                        <td className="border border-black p-1 text-center w-12">Đơn vị</td>
+                                        {bomMap.floors.map(f => (
+                                            <td key={f.id} className="border border-black p-1 text-center w-16 group relative">
+                                                <EditableInput value={f.name} onChange={(v) => {
+                                                    setBomMap({...bomMap, floors: bomMap.floors.map(fl => fl.id === f.id ? {...fl, name: v} : fl)});
+                                                }} className="text-center font-bold" isEditing={!isPreview} />
+                                                <button onClick={() => removeFloor(f.id)} className={`absolute -top-2 -right-2 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded-full border shadow print-hidden ${isPreview ? 'hidden' : 'block'}`}>
+                                                    <Icon name="x" className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        ))}
+                                        <td className="border border-black p-1 text-center w-10">Tổng</td>
+                                        <td className="border border-black p-1 text-center w-20">Đơn giá</td>
+                                        <td className="border border-black p-1 text-center w-24">Thành tiền</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {Object.keys(groupedItems).map((catKey) => (
+                                        <Fragment key={catKey}>
+                                            <tr className="bg-[#e2efda] font-bold avoid-break">
+                                                <td className="border border-black p-1 text-center">{catKey}</td>
+                                                <td className="border border-black p-1 uppercase" colSpan={bomMap.floors.length + 5}>{groupedItems[catKey].categoryName}</td>
+                                            </tr>
+                                            {groupedItems[catKey].items.map((item, idx) => {
+                                                const totalQty = bomMap.floors.reduce((sum, f) => sum + (parseFloat(item.quantities[f.id]) || 0), 0);
+                                                
+                                                let displayPrice = item.price;
+                                                let displayTotal = totalQty * item.price;
+                                                if (item.isImplementationCost) {
+                                                   displayPrice = item.type === 'design' ? implementationCosts.design : implementationCosts.install;
+                                                   displayTotal = displayPrice; 
+                                                }
+
+                                                return (
+                                                    <tr key={item.id} className={`avoid-break ${item.isMechanical ? "text-gray-600 bg-gray-50" : "bg-white"}`}>
+                                                        <td className="border border-black p-1 text-center font-bold w-8">{idx + 1}</td>
+                                                        <td className="border border-black p-1">
+                                                            <div className="font-bold flex justify-between items-center group/item">
+                                                                <EditableInput value={item.name} onChange={(v) => {
+                                                                    setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, name: v} : i)});
+                                                                }} isEditing={!isPreview} className="flex-1" />
+                                                                {!item.isImplementationCost && (
+                                                                    <button onClick={() => deleteItemFromBOM(item.id)} className={`text-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity ml-2 print-hidden no-print ${isPreview ? 'hidden' : 'block'}`} title="Xóa thiết bị này">
+                                                                        <Icon name="trash-2" className="w-3 h-3" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center text-[10px] text-gray-400 mt-0.5">
+                                                                Mã SP: <EditableInput value={item.id} onChange={(v) => {
+                                                                    // Update SKU ID carefully
+                                                                    setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, id: v} : i)});
+                                                                }} isEditing={!isPreview} className="ml-1 w-20" />
+                                                            </div>
+                                                            {item.isMechanical && <span className="text-[10px] text-red-500 italic block">(Chỉ tính IO)</span>}
+                                                        </td>
+                                                        <td className="border border-black p-1 text-center">
+                                                            <EditableInput value={item.unit} onChange={(v) => {
+                                                                setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, unit: v} : i)});
+                                                            }} isEditing={!isPreview} className="text-center" />
+                                                        </td>
+                                                        
+                                                        {item.isImplementationCost ? (
+                                                            <td colSpan={bomMap.floors.length + 1} className="border border-black p-1 text-center text-gray-400 bg-gray-50">- (Tự động) -</td>
+                                                        ) : (
+                                                            <Fragment>
+                                                                {bomMap.floors.map(f => (
+                                                                    <td key={f.id} className="border border-black p-1 text-center">
+                                                                        <input type="number" value={item.quantities[f.id] === 0 ? '' : (item.quantities[f.id] || '')} onChange={(e) => updateBOMQuantity(f.id, item.id, e.target.value)} className={`w-full text-center border-none focus:ring-1 focus:ring-blue-500 bg-transparent outline-none ${isPreview ? 'hidden' : 'block'}`} />
+                                                                        <div className={`text-center w-full ${isPreview ? 'block' : 'hidden'}`}>{item.quantities[f.id] || ''}</div>
+                                                                    </td>
+                                                                ))}
+                                                                <td className="border border-black p-1 text-center font-bold bg-gray-50">{totalQty > 0 ? totalQty : ''}</td>
+                                                            </Fragment>
+                                                        )}
+                                                        <td className="border border-black p-1 text-center">
+                                                            {item.isImplementationCost ? '-' : (
+                                                                <Fragment>
+                                                                    <input type="number" value={item.price} onChange={(e) => { setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, price: e.target.value} : i)}); }} className={`w-full text-center bg-transparent border-none focus:ring-1 focus:ring-blue-500 outline-none ${isPreview ? 'hidden' : 'block'}`} />
+                                                                    <div className={`text-center w-full ${isPreview ? 'block' : 'hidden'}`}>{formatMoney(item.price)}</div>
+                                                                </Fragment>
+                                                            )}
+                                                        </td>
+                                                        <td className="border border-black p-1 text-right">{formatMoney(displayTotal)}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                            {/* Nút thêm thiết bị mới cho nhóm này */}
+                                            {catKey !== 'VIII' && (
+                                                <tr className={`print-hidden no-print bg-white ${isPreview ? 'hidden' : ''}`}>
+                                                    <td colSpan={bomMap.floors.length + 6} className="border border-black p-1 text-center">
+                                                        <button onClick={() => addNewItemToBOM(catKey, groupedItems[catKey].categoryName)} className="text-[11px] text-blue-600 font-bold flex items-center justify-center w-full hover:bg-blue-50 py-1 rounded transition-colors">
+                                                            <Icon name="plus" className="w-3 h-3 mr-1" /> Thêm thiết bị mới
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </Fragment>
+                                    ))}
+
+                                    <tr className="bg-[#e2efda] font-bold mt-2 avoid-break">
+                                        <td className="border border-black p-1 text-center">IX</td>
+                                        <td className="border border-black p-1 uppercase" colSpan={bomMap.floors.length + 5}>TÍNH TOÁN ĐẦU VÀO IO</td>
+                                    </tr>
+                                    <tr className="avoid-break bg-white">
+                                        <td className="border border-black p-1 text-center">1</td>
+                                        <td className="border border-black p-1">Tổng số đầu vào Input</td>
+                                        <td className="border border-black p-1 text-center">-</td>
+                                        {bomMap.floors.map(f => (
+                                            <td key={f.id} className="border border-black p-1 text-center font-bold bg-orange-50">{ioCalculations.floors[f.id].input || ''}</td>
+                                        ))}
+                                        <td className="border border-black p-1 text-center font-bold bg-orange-50">{ioCalculations.total.input || ''}</td>
+                                        <td className="border border-black p-1 text-center" colSpan={2}>-</td>
+                                    </tr>
+                                    <tr className="avoid-break bg-white">
+                                        <td className="border border-black p-1 text-center">2</td>
+                                        <td className="border border-black p-1">Số bộ DIN8s-8i CẦN (Làm tròn lên)</td>
+                                        <td className="border border-black p-1 text-center">Bộ</td>
+                                        {bomMap.floors.map(f => (
+                                            <td key={f.id} className="border border-black p-1 text-center">{ioCalculations.floors[f.id].dinNeed || ''}</td>
+                                        ))}
+                                        <td className="border border-black p-1 text-center font-bold">{ioCalculations.total.dinNeed || ''}</td>
+                                        <td className="border border-black p-1 text-center" colSpan={2}>-</td>
+                                    </tr>
+                                    <tr className="avoid-break bg-white">
+                                        <td className="border border-black p-1 text-center">3</td>
+                                        <td className="border border-black p-1">Tổng số bộ Din ĐÃ BÁO</td>
+                                        <td className="border border-black p-1 text-center">Bộ</td>
+                                        {bomMap.floors.map(f => (
+                                            <td key={f.id} className="border border-black p-1 text-center bg-blue-100">{ioCalculations.floors[f.id].dinReported || ''}</td>
+                                        ))}
+                                        <td className="border border-black p-1 text-center font-bold bg-blue-100">{ioCalculations.total.dinReported || ''}</td>
+                                        <td className="border border-black p-1 text-center" colSpan={2}>-</td>
+                                    </tr>
+                                    <tr className="avoid-break bg-white">
+                                        <td className="border border-black p-1 text-center">4</td>
+                                        <td className="border border-black p-1 font-bold text-red-600">Số lượng CẦN BỔ SUNG</td>
+                                        <td className="border border-black p-1 text-center">Bộ</td>
+                                        {bomMap.floors.map(f => {
+                                            const m = ioCalculations.floors[f.id].missing;
+                                            return <td key={f.id} className={`border border-black p-1 text-center font-bold bg-red-50 ${m > 0 ? 'text-red-600' : ''}`}>{m > 0 ? m : '-'}</td>
+                                        })}
+                                        <td className={`border border-black p-1 text-center font-bold bg-red-50 ${ioCalculations.total.missing > 0 ? 'text-red-600' : ''}`}>{ioCalculations.total.missing > 0 ? ioCalculations.total.missing : '-'}</td>
+                                        <td className="border border-black p-1 text-center" colSpan={2}>-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div className={`mt-2 print-hidden no-print ${isPreview ? 'hidden' : 'block'}`}>
+                                <button onClick={addFloor} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow text-xs">
+                                    <Icon name="plus" className="w-3 h-3 mr-2" /> Thêm Tầng Mới
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderDetailedTable = () => {
+                return (
+                    <div className="w-full">
+                        <table className="w-full border-collapse border border-black mb-4 text-[13px]">
+                            <thead>
+                                <tr className="bg-[#fff2cc] font-bold text-center avoid-break">
+                                    <td className="border border-black p-1 w-10">STT</td>
+                                    <td className="border border-black p-1 w-24">Hình ảnh</td>
+                                    <td className="border border-black p-1">Hạng mục / Mô tả / Hãng / Xuất xứ</td>
+                                    <td className="border border-black p-1 w-12">Đơn vị</td>
+                                    <td className="border border-black p-1 w-10">SL</td>
+                                    <td className="border border-black p-1 w-20">Đơn giá</td>
+                                    <td className="border border-black p-1 w-24">Thành tiền</td>
+                                    <td className="border border-black p-1 w-32">Ghi chú</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {detailedData.map((floor) => (
+                                    <Fragment key={floor.id}>
+                                        <tr className="bg-[#e2efda] font-bold text-sm avoid-break" style={{ pageBreakAfter: 'avoid' }}>
+                                            <td colSpan={8} className="border border-black p-1 uppercase pl-2">
+                                                <EditableInput value={floor.name} onChange={() => {}} isEditing={false} />
+                                            </td>
+                                        </tr>
+                                        {floor.systems.map((system, sysIndex) => (
+                                            <Fragment key={system.id}>
+                                                <tr className="font-bold bg-white avoid-break" style={{ pageBreakAfter: 'avoid' }}>
+                                                    <td className="border border-black p-1 text-center">{sysIndex + 1}</td>
+                                                    <td colSpan={7} className="border border-black p-1 uppercase">{system.name}</td>
+                                                </tr>
+                                                {system.items.map((item, itemIdx) => (
+                                                    <tr key={item.id} className="group hover:bg-gray-50 avoid-break bg-white">
+                                                        <td className="border border-black p-1 text-center align-middle relative font-bold">
+                                                            {sysIndex + 1}.{itemIdx + 1}
+                                                            <button onClick={() => deleteItemFromDetail(floor.id, item.id)} className={`absolute top-1 left-1 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded print-hidden ${isPreview ? 'hidden' : 'block'}`}>
+                                                                <Icon name="trash-2" className="w-3 h-3" />
+                                                            </button>
+                                                        </td>
+                                                        <td className="border border-black p-1 align-middle text-center">
+                                                            {/* Ảnh tải tự động bằng Mã SP (SKU) */}
+                                                            <ImageUpload sku={item.id} value={item.image} onChange={(v) => {
+                                                                setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, image: v} : i)});
+                                                            }} isEditing={!isPreview}/>
+                                                        </td>
+                                                        <td className="border border-black p-1 align-middle break-words min-w-0">
+                                                            <div className="font-bold mb-1">
+                                                                <EditableInput value={item.name} onChange={(v) => {
+                                                                    setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, name: v} : i)});
+                                                                }} isEditing={!isPreview} />
+                                                            </div>
+                                                            <EditableInput value={item.desc} onChange={(v) => {
+                                                                setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, desc: v} : i)});
+                                                            }} placeholder="Mô tả kỹ thuật..." className="text-[12px] text-gray-700 italic leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                            <EditableInput value={item.brand} onChange={(v) => {
+                                                                setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, brand: v} : i)});
+                                                            }} placeholder="Hãng / Xuất xứ" className="text-[12px] mt-1 text-gray-500 uppercase" isEditing={!isPreview} />
+                                                        </td>
+                                                        <td className="border border-black p-1 text-center align-middle">{item.unit}</td>
+                                                        <td className="border border-black p-1 text-center align-middle font-bold">
+                                                            {floor.id === 'common' ? item.qty : (
+                                                                <EditableInput value={item.qty} onChange={(v) => updateBOMQuantity(floor.id, item.id, v)} className="text-center font-bold" isEditing={!isPreview} />
+                                                            )}
+                                                        </td>
+                                                        <td className="border border-black p-1 text-center align-middle">
+                                                            <input type="number" value={item.price} onChange={(e) => { setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, price: e.target.value} : i)}); }} className={`w-full text-center bg-transparent border-none focus:ring-1 focus:ring-blue-500 outline-none ${isPreview ? 'hidden' : 'block'}`} />
+                                                            <div className={`text-center w-full ${isPreview ? 'block' : 'hidden'}`}>{formatMoney(item.price)}</div>
+                                                        </td>
+                                                        <td className="border border-black p-1 text-right align-middle font-bold">
+                                                            {formatMoney(item.total)}
+                                                        </td>
+                                                        <td className="border border-black p-1 align-middle">
+                                                            <EditableInput value={(item.notes && item.notes[floor.id]) || ''} onChange={(v) => {
+                                                                    setBomMap(prev => ({
+                                                                        ...prev,
+                                                                        items: prev.items.map(i => i.id === item.id ? { ...i, notes: { ...(i.notes || {}), [floor.id]: v } } : i)
+                                                                    }));
+                                                                }} placeholder="Vị trí lắp đặt..." className="text-[11px] italic text-gray-700" isTextArea={true} isEditing={!isPreview} />
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </Fragment>
+                                        ))}
+                                    </Fragment>
+                                ))}
+                            </tbody>
+                        </table>
+                        
+                        {includeAudio && (
+                            <div className="mt-4 page-break-before">
+                                <div className="text-red-600 font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
+                                <table className="w-full border-collapse border border-black mb-4 text-[13px]">
+                                    <tbody>
+                                        {audioData.map((item, idx) => (
+                                            <tr key={item.id} className="avoid-break group hover:bg-gray-50 bg-white">
+                                                <td className="border border-black p-1 text-center align-middle font-bold text-red-600 w-10">{idx + 1}</td>
+                                                <td className="border border-black p-1 align-middle w-24 text-center">
+                                                    <ImageUpload value={item.image} onChange={(v) => {
+                                                        const newD = [...audioData]; newD[idx].image = v; setAudioData(newD);
+                                                    }} isEditing={!isPreview}/>
+                                                </td>
+                                                <td className="border border-black p-1 align-middle break-words min-w-0">
+                                                    <EditableInput value={item.name} onChange={v => { const newD = [...audioData]; newD[idx].name = v; setAudioData(newD); }} className="font-bold" isEditing={!isPreview} />
+                                                    <EditableInput value={item.desc} onChange={v => { const newD = [...audioData]; newD[idx].desc = v; setAudioData(newD); }} className="text-[12px] mt-1 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                </td>
+                                                <td className="border border-black p-1 text-center align-middle w-12">{item.unit}</td>
+                                                <td className="border border-black p-1 text-center align-middle w-10 font-bold">
+                                                    <EditableInput value={item.qty} onChange={v => { const newD = [...audioData]; newD[idx].qty = v; setAudioData(newD); }} className="text-center font-bold" isEditing={!isPreview} />
+                                                </td>
+                                                <td className="border border-black p-1 text-center align-middle w-20">
+                                                    <input type="number" value={item.price} onChange={(e) => { const newD = [...audioData]; newD[idx].price = e.target.value; setAudioData(newD); }} className={`w-full text-center bg-transparent border-none focus:ring-1 focus:ring-blue-500 outline-none ${isPreview ? 'hidden' : 'block'}`} />
+                                                    <div className={`text-center w-full ${isPreview ? 'block' : 'hidden'}`}>{formatMoney(item.price)}</div>
+                                                </td>
+                                                <td className="border border-black p-1 text-right align-middle font-bold w-24">{formatMoney((parseFloat(item.qty)||0) * (parseFloat(item.price)||0))}</td>
+                                                <td className="border border-black p-1 align-middle w-32">
+                                                    <EditableInput value={item.detailNote || ''} onChange={v => { const newD = [...audioData]; newD[idx].detailNote = v; setAudioData(newD); }} placeholder="Vị trí lắp đặt..." className="text-[11px] italic text-gray-700" isTextArea={true} isEditing={!isPreview} />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            const renderSummaryTable = () => {
+                let grandTotal = implementationCosts.design + implementationCosts.install;
+                let audioTotal = 0;
+                let currentSTT = 1; // Biến STT tổng thể
+
+                return (
+                    <div className="w-full">
+                        <h2 className="text-[16px] font-bold text-center mb-4 uppercase">BẢNG DỰ TOÁN TỔNG HỢP PHƯƠNG ÁN {headerInfo.plan}</h2>
+                        <table className="w-full border-collapse border border-black mb-4 text-[13px]">
+                            <thead>
+                                <tr className="bg-[#a9d08e] font-bold text-center avoid-break">
+                                    <td className="border border-black p-1 w-10">STT</td>
+                                    <td className="border border-black p-1">HẠNG MỤC ĐIỀU KHIỂN</td>
+                                    <td className="border border-black p-1 w-28">Giá trị ({currency})</td>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {detailedData.map((floor) => {
+                                    if (floor.id === 'common') return null; 
+                                    let floorTotal = floor.systems.reduce((sum, sys) => sum + sys.items.reduce((s, i) => s + i.total, 0), 0);
+                                    grandTotal += floorTotal;
+                                    
+                                    return (
+                                        <Fragment key={floor.id}>
+                                            <tr className="font-bold bg-gray-50 avoid-break" style={{ pageBreakAfter: 'avoid' }}>
+                                                <td className="border border-black p-1 text-center">{currentSTT++}</td>
+                                                <td className="border border-black p-1 uppercase">{floor.name}</td>
+                                                <td className="border border-black p-1 text-center">{formatMoney(floorTotal)}</td>
+                                            </tr>
+                                            {floor.systems.map((sys) => {
+                                                let sysTotal = sys.items.reduce((s, i) => s + i.total, 0);
+                                                return (
+                                                    <tr key={sys.id} className="avoid-break bg-white">
+                                                        <td className="border border-black p-1 text-center"></td>
+                                                        <td className="border border-black p-1 pl-6">
+                                                            <span className="uppercase">{sys.name}</span>
+                                                            <EditableInput value={sys.note} onChange={(v) => {}} placeholder="Ghi chú..." isTextArea={true} isEditing={!isPreview} className="text-[11px] block text-gray-600 mt-0.5" />
+                                                        </td>
+                                                        <td className="border border-black p-1 text-center">{formatMoney(sysTotal)}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </Fragment>
+                                    );
+                                })}
+
+                                {detailedData.find(f => f.id === 'common')?.systems.map((sys) => {
+                                    let sysTotal = sys.items.reduce((s, i) => s + i.total, 0);
+                                    grandTotal += sysTotal;
+                                    let defaultNote = sys.id.includes('An ninh') ? '- Báo trạng thái cửa ra vào tầng Trệt và cửa ra vào sân thượng' : (sys.id.includes('Điều hòa') ? '- Điều khiển toàn bộ dàn lạnh trong nhà.' : '');
+                                    return (
+                                        <tr className="font-bold avoid-break bg-white" key={sys.id}>
+                                            <td className="border border-black p-1 text-center">{currentSTT++}</td>
+                                            <td className="border border-black p-1">
+                                                <span className="uppercase">{sys.name}</span>
+                                                <EditableInput value={sys.note || defaultNote} onChange={() => {}} placeholder="Ghi chú..." isTextArea={true} isEditing={!isPreview} className="text-[11px] block font-normal text-gray-600 mt-0.5" />
+                                            </td>
+                                            <td className="border border-black p-1 text-center">{formatMoney(sysTotal)}</td>
+                                        </tr>
+                                    );
+                                })}
+
+                                <tr className="font-bold avoid-break bg-white">
+                                    <td className="border border-black p-1 text-center">{currentSTT++}</td>
+                                    <td className="border border-black p-1">
+                                        <span className="uppercase">CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT</span>
+                                        <EditableInput value={"- Triển khai bản vẽ nguyên lý điện thông minh, cập nhật bản vẽ và hướng dẫn thi công định kì\n- Đấu nối tủ điện, lắp đặt các thiết bị điều khiển.\n- Đấu nối công tắc, cảm biến.\n- Kết nối điều hòa.\n- Chạy thử, hiệu chỉnh, thay đổi, bàn giao, bảo hành."} onChange={() => {}} isTextArea={true} isEditing={!isPreview} className="text-[11px] block font-normal text-gray-600 mt-1 leading-tight" />
+                                    </td>
+                                    <td className="border border-black p-1 text-center">{formatMoney(implementationCosts.install)}</td>
+                                </tr>
+
+                                <tr className="font-bold avoid-break bg-white">
+                                    <td className="border border-black p-1 text-center">{currentSTT++}</td>
+                                    <td className="border border-black p-1">
+                                        <span className="uppercase">CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG</span>
+                                        <EditableInput value={"- Lập trình hệ thống Smart home. Điều khiển toàn bộ các hạng mục: chiếu sáng, rèm, điều hòa, an ninh, cổng....\n- Lập trình, thiết kế giao diện trên Smart phone\n- Lập trình, thiết kế giao diện trên màn hình cảm ứng"} onChange={() => {}} isTextArea={true} isEditing={!isPreview} className="text-[11px] block font-normal text-gray-600 mt-1 leading-tight" />
+                                    </td>
+                                    <td className="border border-black p-1 text-center">{formatMoney(implementationCosts.design)}</td>
+                                </tr>
+
+                                <tr className="bg-[#e2efda] font-bold avoid-break">
+                                    <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ SMARTHOME</td>
+                                    <td className="border border-black p-2 text-right font-bold">{formatMoney(grandTotal)}</td>
+                                </tr>
+                                <tr className="bg-[#e2efda] font-bold avoid-break">
+                                    <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
+                                    <td className="border border-black p-2 text-right font-bold">{formatMoney(grandTotal * 0.08)}</td>
+                                </tr>
+                                <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
+                                    <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ SMARTHOME SAU THUẾ</td>
+                                    <td className="border border-black p-2 text-right font-bold">{formatMoney(grandTotal * 1.08)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        {includeAudio && (
+                            <div className="mt-6 page-break-before">
+                                <div className="text-red-600 font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
+                                <table className="w-full border-collapse border border-black mb-4 text-[13px]">
+                                    <tbody>
+                                        {audioData.map((item, idx) => {
+                                            let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
+                                            audioTotal += itemTotal;
+                                            return (
+                                                <tr key={item.id} className="avoid-break bg-white">
+                                                    <td className="border border-black p-1 text-center align-middle w-10 text-red-600 font-bold">{idx + 1}</td>
+                                                    <td className="border border-black p-1">
+                                                        <div className="font-bold">
+                                                            <EditableInput value={item.name} onChange={v => { const newD = [...audioData]; newD[idx].name = v; setAudioData(newD); }} isEditing={!isPreview} />
+                                                        </div>
+                                                        <EditableInput value={item.desc} onChange={v => { const newD = [...audioData]; newD[idx].desc = v; setAudioData(newD); }} className="text-[12px] mt-0.5 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                    </td>
+                                                    <td className="border border-black p-1 text-center align-middle w-28 font-bold">{formatMoney(itemTotal)}</td>
+                                                </tr>
+                                            )
+                                        })}
+                                        <tr className="bg-[#e2efda] font-bold avoid-break">
+                                            <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ PHẦN ÂM THANH</td>
+                                            <td className="border border-black p-2 text-right font-bold">{formatMoney(audioTotal)}</td>
+                                        </tr>
+                                        <tr className="bg-[#e2efda] font-bold avoid-break">
+                                            <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
+                                            <td className="border border-black p-2 text-right font-bold">{formatMoney(audioTotal * 0.08)}</td>
+                                        </tr>
+                                        <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
+                                            <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ ÂM THANH SAU THUẾ</td>
+                                            <td className="border border-black p-2 text-right font-bold">{formatMoney(audioTotal * 1.08)}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        <div className="mt-4 text-[13px] avoid-break page-break-before">
+                            <h3 className="font-bold text-red-600 underline mb-2 uppercase">Điều kiện thương mại và phạm vi cung cấp:</h3>
+                            <p className="font-bold underline mb-1">Giá đã bao gồm thuế VAT</p>
+                            <table className="w-full mb-3">
+                                <tbody>
+                                    {commercialTerms.slice(0, 4).map((term, idx) => (
+                                        <tr key={idx} className="avoid-break">
+                                            <td className="w-40 py-1 align-top font-bold">{term.label}</td>
+                                            <td className="py-1">
+                                                <EditableInput value={term.value} onChange={(v) => {
+                                                    const newTerms = [...commercialTerms]; newTerms[idx].value = v; setCommercialTerms(newTerms);
+                                                }} isTextArea={true} isEditing={!isPreview} className="leading-tight"/>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            <p className="font-bold underline mt-2 mb-1 avoid-break">Phạm vi cung cấp:</p>
+                            <div className="pl-4 avoid-break">
+                                <EditableInput value={commercialTerms[4].value} onChange={(v) => {
+                                    const newTerms = [...commercialTerms]; newTerms[4].value = v; setCommercialTerms(newTerms);
+                                }} isTextArea={true} isEditing={!isPreview} className="leading-tight"/>
+                            </div>
+
+                            <p className="font-bold underline mt-2 mb-1 avoid-break">Phạm vi không cung cấp (chưa bao gồm):</p>
+                            <div className="pl-4 avoid-break">
+                                <EditableInput value={commercialTerms[5].value} onChange={(v) => {
+                                    const newTerms = [...commercialTerms]; newTerms[5].value = v; setCommercialTerms(newTerms);
+                                }} isTextArea={true} isEditing={!isPreview} className="leading-tight"/>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className={`min-h-screen pb-10 ${isPreview ? 'bg-gray-200 print:bg-white print:pb-0' : 'bg-gray-100'} font-sans`}>
+                    
+                    <div className={`fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded shadow-lg z-50 items-center print-hidden no-print transition-opacity duration-300 ${notification ? 'flex opacity-100' : 'hidden opacity-0'}`}>
+                        <Icon name="info" className="w-5 h-5 mr-2 text-blue-400" />
+                        {notification}
+                    </div>
+
+                    {/* Thanh công cụ Xem trước bản in luôn cố định trên cùng */}
+                    <div className={`fixed top-0 left-0 right-0 bg-gray-900 text-white p-3 z-50 flex justify-center items-center gap-6 shadow-md preview-toolbar print-hidden no-print transition-transform duration-300 ${isPreview ? 'translate-y-0' : '-translate-y-full'}`}>
+                        <div className="font-bold text-yellow-400 uppercase tracking-wider">XEM TRƯỚC BẢN IN</div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[12px] text-gray-400">KHỔ GIẤY:</span>
+                            <button onClick={() => setPrintLayout('portrait')} className={`px-4 py-1.5 text-sm rounded font-bold transition-colors ${printLayout === 'portrait' ? 'bg-gray-600' : 'bg-transparent hover:bg-gray-800 border border-gray-600'}`}>Dọc</button>
+                            <button onClick={() => setPrintLayout('landscape')} className={`px-4 py-1.5 text-sm rounded font-bold transition-colors ${printLayout === 'landscape' ? 'bg-gray-600' : 'bg-transparent hover:bg-gray-800 border border-gray-600'}`}>Ngang</button>
+                        </div>
+                        <div className="w-px h-6 bg-gray-600 mx-2"></div>
+                        <button onClick={() => window.print()} className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-bold shadow transition-colors">
+                            <Icon name="printer" className="w-4 h-4 mr-2" /> XUẤT PDF / IN
+                        </button>
+                        <button onClick={() => setIsPreview(false)} className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm font-bold shadow ml-auto transition-colors">
+                            <Icon name="x" className="w-4 h-4 mr-2" /> Trở lại soạn thảo
+                        </button>
+                    </div>
+
+                    {/* Thanh công cụ Soạn thảo */}
+                    <div className={`max-w-6xl mx-auto bg-gray-900 text-white p-3 flex justify-between items-center transition-all duration-300 no-print ${isPreview ? 'hidden' : 'block'}`}>
+                        <div className="flex gap-2">
+                            <button onClick={() => setActiveTab('bom')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'bom' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>BOM Kỹ thuật</button>
+                            <button onClick={() => setActiveTab('summary')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'summary' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Bảng Tổng Hợp</button>
+                            <button onClick={() => setActiveTab('detailed')} className={`px-4 py-2 rounded font-bold transition-colors ${activeTab === 'detailed' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'}`}>Bảng Chi Tiết</button>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <div className={`text-[12px] font-bold ${isDirty ? 'text-yellow-400' : 'text-green-400'}`}>
+                                {isDirty ? "⚠️ Chưa lưu" : "✔️ Đã lưu"}
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer bg-gray-800 px-3 py-1.5 rounded text-sm hover:bg-gray-700 transition-colors">
+                                <input type="checkbox" checked={includeAudio} onChange={(e) => setIncludeAudio(e.target.checked)} className="form-checkbox text-blue-500 rounded" />
+                                <span>+ Âm thanh</span>
+                            </label>
+                            <div className="flex items-center gap-2 bg-gray-800 px-3 py-1.5 rounded text-sm">
+                                <select value={currency} onChange={e => setCurrency(e.target.value)} className="bg-transparent border-none text-white focus:ring-0 cursor-pointer outline-none font-bold">
+                                    <option value="USD">USD</option>
+                                    <option value="VND">VNĐ</option>
+                                </select>
+                                <input type="number" value={exchangeRate} onChange={e => setExchangeRate(Number(e.target.value))} className={`w-20 bg-gray-700 text-white px-2 py-1 rounded text-center border-none focus:ring-1 focus:ring-blue-500 outline-none ${currency === 'VND' ? 'block' : 'hidden'}`} placeholder="Tỷ giá" />
+                            </div>
+                            <div className="h-6 w-px bg-gray-600 mx-1"></div>
+                            <button onClick={handleExportData} className="flex items-center px-4 py-1.5 bg-green-600 hover:bg-green-700 rounded text-sm font-bold shadow transition-colors">
+                                <Icon name="download" className="w-4 h-4 mr-2" /> Lưu File
+                            </button>
+                            <label className="flex items-center px-4 py-1.5 bg-orange-600 hover:bg-orange-700 rounded text-sm font-bold shadow cursor-pointer transition-colors">
+                                <Icon name="upload" className="w-4 h-4 mr-2" /> Mở File
+                                <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
+                            </label>
+                            <button onClick={() => setIsPreview(true)} className="flex items-center px-5 py-1.5 bg-white text-gray-900 hover:bg-gray-200 rounded font-bold text-sm shadow transition-colors ml-2">
+                                <Icon name="printer" className="w-4 h-4 mr-2" /> Xem In PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Vùng hiển thị giấy A4 */}
+                    <div className={`${isPreview ? 'mt-20' : ''} print-no-shadow print-container transition-all duration-300 ${!isPreview ? 'max-w-6xl mx-auto shadow-xl bg-white p-8 rounded-b-md' : (printLayout === 'portrait' ? 'a4-preview-portrait' : 'a4-preview-landscape')}`}>
+                        
+                        <div className={activeTab === 'bom' ? 'hidden' : 'block'}>
+                            <div className="flex justify-between items-start mb-4 border-b pb-4 avoid-break">
+                                <div className="w-48 h-16">
+                                    <ImageUpload value={headerInfo.logo} onChange={(v) => setHeaderInfo({...headerInfo, logo: v})} isEditing={!isPreview} />
+                                </div>
+                                <div className="text-right text-[12px] leading-tight text-gray-700">
+                                    <div className="font-bold text-blue-900 text-[14px] mb-1 uppercase">ASEL VIỆT NAM</div>
+                                    <div className="font-bold">BMS & SMART HOME CENTER</div>
+                                    <div>VPGD: Villa số 3, P. Thành Công, Q. Ba Đình, TP. Hà Nội</div>
+                                    <div>HCM: 81 Nguyễn Cơ Thạch, An Khánh, TP. Hồ Chí Minh</div>
+                                    <div>Website: asel.vn</div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex justify-between text-[12px] mb-4 avoid-break leading-tight">
+                                <div className="w-1/2 pr-2">
+                                    <div className="flex mb-1"><strong className="w-24">Dự án:</strong> <EditableInput value={headerInfo.projectName} onChange={(v) => setHeaderInfo({...headerInfo, projectName: v})} isEditing={!isPreview} /></div>
+                                    <div className="flex mb-1"><strong className="w-24">Chủ đầu tư:</strong> <EditableInput value={headerInfo.owner} onChange={(v) => setHeaderInfo({...headerInfo, owner: v})} isEditing={!isPreview} /></div>
+                                    <div className="flex mb-1"><strong className="w-24">Địa chỉ:</strong> <EditableInput value={headerInfo.location} onChange={(v) => setHeaderInfo({...headerInfo, location: v})} isEditing={!isPreview} /></div>
+                                    <div className="flex mb-1"><strong className="w-24">Phương án:</strong> <EditableInput value={headerInfo.plan} onChange={(v) => setHeaderInfo({...headerInfo, plan: v})} isEditing={!isPreview} /></div>
+                                </div>
+                                <div className="w-1/2 pl-2">
+                                    <div className="flex mb-1"><strong className="w-24">Tư vấn dự án:</strong> <EditableInput value={headerInfo.consultant} onChange={(v) => setHeaderInfo({...headerInfo, consultant: v})} isEditing={!isPreview} /></div>
+                                    <div className="flex mb-1"><strong className="w-24">Số điện thoại:</strong> <EditableInput value={headerInfo.phone} onChange={(v) => setHeaderInfo({...headerInfo, phone: v})} isEditing={!isPreview} /></div>
+                                    <div className="flex mb-1"><strong className="w-24">Email:</strong> <EditableInput value={headerInfo.email} onChange={(v) => setHeaderInfo({...headerInfo, email: v})} isEditing={!isPreview} /></div>
+                                    <div className="flex mb-1"><strong className="w-24">Ngày báo giá:</strong> <EditableInput value={headerInfo.date} onChange={(v) => setHeaderInfo({...headerInfo, date: v})} isEditing={!isPreview} /></div>
+                                </div>
+                            </div>
+
+                            <div className="mb-4 avoid-break text-left">
+                                <div className="font-bold text-[13px] text-blue-800 text-left">
+                                    <EditableInput value={headerInfo.introText} onChange={(v) => setHeaderInfo({...headerInfo, introText: v})} isEditing={!isPreview} className="text-left" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={activeTab === 'bom' ? 'block' : 'hidden'}>{renderBOM()}</div>
+                        <div className={activeTab === 'detailed' ? 'block' : 'hidden'}>{renderDetailedTable()}</div>
+                        <div className={activeTab === 'summary' ? 'block' : 'hidden'}>{renderSummaryTable()}</div>
+
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
