@@ -3,21 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công Cụ Báo Giá SmartHome ASEL</title>
+    <title>Công Cụ Báo Giá SmartHome</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
-    
-    <!-- Thư viện xuất Excel giữ nguyên định dạng màu sắc (Đã cập nhật CDN ổn định) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; }
         
         @media print {
-            @page { margin: 10mm; }
             body { 
                 background-color: white !important; 
                 -webkit-print-color-adjust: exact !important; 
@@ -39,11 +36,9 @@
             textarea:empty, input:empty { display: none !important; }
             textarea::placeholder, input::placeholder { color: transparent !important; }
             
-            /* Chống cắt đôi dòng khi in */
             tr, td, th, .avoid-break { 
                 page-break-inside: avoid !important; 
                 break-inside: avoid !important;
-                page-break-after: auto;
             }
             .page-break-before { page-break-before: always !important; }
             
@@ -51,7 +46,6 @@
             .print-container { min-height: 0 !important; height: auto !important; padding: 0 !important; background-color: white !important;}
         }
 
-        /* Giao diện khung A4 xem trước */
         .a4-preview-portrait { width: 210mm; min-height: 297mm; margin: 0 auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); padding: 10mm; }
         .a4-preview-landscape { width: 297mm; min-height: 210mm; margin: 0 auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); padding: 10mm; }
     </style>
@@ -115,9 +109,7 @@
             const fileInputRef = useRef(null);
             const [imgError, setImgError] = useState(false);
 
-            useEffect(() => {
-                setImgError(false);
-            }, [sku]);
+            useEffect(() => { setImgError(false); }, [sku]);
 
             const handleFileChange = (e) => {
                 const file = e.target.files[0];
@@ -164,10 +156,10 @@
             const [exchangeRate, setExchangeRate] = useState(26400);
             const [currency, setCurrency] = useState('USD');
             const [includeAudio, setIncludeAudio] = useState(true);
+            const [includeExtraOption, setIncludeExtraOption] = useState(false);
             const [isPreview, setIsPreview] = useState(false);
             const [printLayout, setPrintLayout] = useState('portrait'); 
             const [notification, setNotification] = useState('');
-            
             const [isDirty, setIsDirty] = useState(false);
             const [initialLoad, setInitialLoad] = useState(true);
 
@@ -245,7 +237,7 @@
                     { id: 'm3', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Công tắc cơ 2 nút', desc: '', brand: '', unit: 'Chiếc', price: 0, quantities: { tret: 2, t1: 1, t2: 1 }, isMechanical: true, buttons: 2 },
                     { id: 'm4', category: 'III', categoryName: 'Phím bấm, màn hình, công tắc', name: 'Công tắc cơ 1 nút', desc: '', brand: '', unit: 'Chiếc', price: 0, quantities: { tret: 2, t1: 1, t2: 1 }, isMechanical: true, buttons: 1 },
                     
-                    { id: 'v1', category: 'IV', categoryName: 'An ninh', name: 'Cảm biến từ', desc: 'Cảm biến từ an ninh, báo mở cửa.', brand: 'PRC', unit: 'Chiếc', price: 8, quantities: { tret: 4, t1: 0, t2: 0 }, isInput: true },
+                    { id: 'v1', category: 'IV', categoryName: 'An ninh', name: 'Cảm biến từ', desc: 'Cảm biến từ an ninh, báo trạng thái mở cửa.', brand: 'PRC', unit: 'Chiếc', price: 8, quantities: { tret: 4, t1: 0, t2: 0 }, isInput: true },
                     { id: 'v2', category: 'IV', categoryName: 'An ninh', name: 'Cảm biến báo cháy', desc: 'Cảm biến báo cháy phát hiện khói, nhiệt.', brand: 'PRC', unit: 'Chiếc', price: 30, quantities: { tret: 2, t1: 0, t2: 0 } },
                     { id: 'v3', category: 'IV', categoryName: 'An ninh', name: 'Còi', desc: 'Còi báo động an ninh cường độ âm thanh cao.', brand: 'PRC', unit: 'Chiếc', price: 25, quantities: { tret: 1, t1: 0, t2: 0 } },
                     { id: 'v4', category: 'IV', categoryName: 'An ninh', name: 'Bộ báo tin nhắn', desc: 'Nhắn tin SMS và gọi điện trực tiếp đến SĐT đăng ký.', brand: 'ASEL', unit: 'Bộ', price: 500, quantities: { tret: 1, t1: 0, t2: 0 } },
@@ -273,6 +265,10 @@
                 { id: 3, name: 'Chi phí thi công cài đặt, cân chỉnh hệ thống âm thanh', desc: '', image: '', unit: 'Gói', qty: 1, price: 810 },
             ]);
 
+            const [extraOptionData, setExtraOptionData] = useState([
+                { id: 1, name: 'Hệ thống tưới cây tự động', desc: 'Điều khiển tự động các van tưới theo kịch bản thời gian hoặc độ ẩm.\n- Tích hợp điều khiển qua Smart home.', image: '', unit: 'Hệ', qty: 1, price: 1200 },
+            ]);
+
             const [commercialTerms, setCommercialTerms] = useState([
                 { label: 'Điều kiện kỹ thuật', value: '100% Mới chưa qua sử dụng.' },
                 { label: 'Thời gian giao hàng', value: 'Từ 4-6 tuần kể từ khi ngày kí hợp đồng.' },
@@ -285,7 +281,7 @@
             useEffect(() => {
                 if (!initialLoad) setIsDirty(true);
                 else setInitialLoad(false);
-            }, [bomMap, headerInfo, audioData, commercialTerms, exchangeRate, currency, includeAudio, summaryNotes]);
+            }, [bomMap, headerInfo, audioData, extraOptionData, commercialTerms, exchangeRate, currency, includeAudio, includeExtraOption, summaryNotes]);
 
             const hardwareTotal = useMemo(() => {
                 return bomMap.items.reduce((sum, item) => {
@@ -329,13 +325,13 @@
 
                 bomMap.floors.forEach(f => {
                     calc.floors[f.id].dinNeed = Math.ceil(calc.floors[f.id].input / 8);
-                    const diff = calc.floors[f.id].dinReported - calc.floors[f.id].dinNeed;
-                    calc.floors[f.id].missing = diff < 0 ? Math.abs(diff) : 0;
+                    const diff = calc.floors[f.id].dinNeed - calc.floors[f.id].dinReported;
+                    calc.floors[f.id].missing = diff > 0 ? diff : 0;
                 });
 
                 calc.total.dinNeed = Math.ceil(calc.total.input / 8);
-                const totalDiff = calc.total.dinReported - calc.total.dinNeed;
-                calc.total.missing = totalDiff < 0 ? Math.abs(totalDiff) : 0;
+                const totalDiff = calc.total.dinNeed - calc.total.dinReported;
+                calc.total.missing = totalDiff > 0 ? totalDiff : 0;
 
                 return calc;
             }, [bomMap]);
@@ -384,7 +380,7 @@
             };
 
             const handleExportData = () => {
-                const dataToSave = { headerInfo, bomMap, audioData, commercialTerms, includeAudio, exchangeRate, currency, summaryNotes };
+                const dataToSave = { headerInfo, bomMap, audioData, extraOptionData, commercialTerms, includeAudio, includeExtraOption, exchangeRate, currency, summaryNotes };
                 const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -406,8 +402,10 @@
                         if (parsed.headerInfo) setHeaderInfo({...parsed.headerInfo, date: getTodayDate()});
                         if (parsed.bomMap) setBomMap(parsed.bomMap);
                         if (parsed.audioData) setAudioData(parsed.audioData);
+                        if (parsed.extraOptionData) setExtraOptionData(parsed.extraOptionData);
                         if (parsed.commercialTerms) setCommercialTerms(parsed.commercialTerms);
                         if (parsed.includeAudio !== undefined) setIncludeAudio(parsed.includeAudio);
+                        if (parsed.includeExtraOption !== undefined) setIncludeExtraOption(parsed.includeExtraOption);
                         if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
                         if (parsed.currency) setCurrency(parsed.currency);
                         if (parsed.summaryNotes) setSummaryNotes(parsed.summaryNotes);
@@ -423,21 +421,30 @@
 
             const handleExportExcel = () => {
                 if (typeof XLSX === 'undefined') {
-                    showNotification("Thư viện xuất Excel đang tải hoặc bị lỗi mạng, vui lòng F5 và thử lại sau vài giây.");
+                    showNotification("Thư viện xuất Excel chưa tải xong, vui lòng chờ vài giây.");
                     return;
                 }
 
                 const wb = XLSX.utils.book_new();
 
-                const c = (v, bg, hAlign = 'center', bold = false) => ({
-                    v: v,
-                    s: {
-                        font: { bold: bold, name: 'Arial', sz: 10 },
-                        alignment: { horizontal: hAlign, vertical: 'center', wrapText: true },
-                        fill: bg ? { fgColor: { rgb: bg } } : undefined,
-                        border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
+                const c = (v, bg, hAlign = 'center', bold = false, numFmt = null) => {
+                    let cell = {
+                        v: v,
+                        s: {
+                            font: { bold: bold, name: 'Arial', sz: 10 },
+                            alignment: { horizontal: hAlign, vertical: 'center', wrapText: true },
+                            fill: bg ? { fgColor: { rgb: bg } } : undefined,
+                            border: { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } }
+                        }
+                    };
+                    if (numFmt && typeof v === 'number') {
+                        cell.t = 'n';
+                        cell.z = numFmt;
                     }
-                });
+                    return cell;
+                };
+
+                const moneyFmt = currency === 'VND' ? '#,##0' : '#,##0';
 
                 // 1. DỮ LIỆU SHEET 1: BOM
                 const bomData = [];
@@ -484,12 +491,17 @@
                             merges1.push({ s: { r: r1, c: 3 }, e: { r: r1, c: bomMap.floors.length + 3 } });
                             for(let i=0; i < bomMap.floors.length; i++) row.push(c('', null)); 
                             row.push(c('-', null, 'center', false)); 
-                            row.push(c(displayTotal, null, 'center', false));
+                            let actualTot = currency === 'VND' ? displayTotal * exchangeRate : displayTotal;
+                            row.push(c(actualTot, null, 'center', false, moneyFmt));
                         } else {
                             bomMap.floors.forEach(f => row.push(c(item.quantities[f.id] || '', item.isMechanical ? 'F2F2F2' : null, 'center', false)));
                             row.push(c(totalQty > 0 ? totalQty : '', 'F2F2F2', 'center', true));
-                            row.push(c(displayPrice, item.isMechanical ? 'F2F2F2' : null, 'center', false));
-                            row.push(c(displayTotal, item.isMechanical ? 'F2F2F2' : null, 'center', false));
+                            
+                            let actualPrice = currency === 'VND' ? displayPrice * exchangeRate : displayPrice;
+                            let actualTot = currency === 'VND' ? displayTotal * exchangeRate : displayTotal;
+                            
+                            row.push(c(actualPrice, item.isMechanical ? 'F2F2F2' : null, 'center', false, moneyFmt));
+                            row.push(c(actualTot, item.isMechanical ? 'F2F2F2' : null, 'center', false, moneyFmt));
                         }
                         bomData.push(row); r1++;
                     });
@@ -516,14 +528,17 @@
                         
                         system.items.forEach((item, itemIdx) => {
                             let note = (item.notes && item.notes[floor.id]) || '';
+                            let actualPrice = currency === 'VND' ? item.price * exchangeRate : item.price;
+                            let actualTot = currency === 'VND' ? item.total * exchangeRate : item.total;
+
                             detData.push([
                                 c(`${sysIndex + 1}.${itemIdx + 1}`, null, 'center', true),
                                 c('', null),
                                 c(`${item.name}\n${item.desc}\n[Hãng: ${item.brand}]`, null, 'left', false),
                                 c(item.unit, null, 'center', false),
                                 c(floor.id === 'common' ? item.qty : item.quantities[floor.id], null, 'center', true),
-                                c(item.price, null, 'center', false),
-                                c(item.total, null, 'center', true),
+                                c(actualPrice, null, 'center', false, moneyFmt),
+                                c(actualTot, null, 'center', true, moneyFmt),
                                 c(note, null, 'left', false)
                             ]); r2++;
                         });
@@ -536,14 +551,39 @@
                     
                     audioData.forEach((item, idx) => {
                         let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
+                        let actualPrice = currency === 'VND' ? item.price * exchangeRate : item.price;
+                        let actualTot = currency === 'VND' ? itemTotal * exchangeRate : itemTotal;
+
                         detData.push([
                             c(idx + 1, null, 'center', true),
                             c('', null),
                             c(`${item.name}\n${item.desc}`, null, 'left', false),
                             c(item.unit, null, 'center', false),
                             c(item.qty, null, 'center', true),
-                            c(item.price, null, 'center', false),
-                            c(itemTotal, null, 'center', true),
+                            c(actualPrice, null, 'center', false, moneyFmt),
+                            c(actualTot, null, 'center', true, moneyFmt),
+                            c(item.detailNote || '', null, 'left', false)
+                        ]); r2++;
+                    });
+                }
+
+                if (includeExtraOption) {
+                    detData.push([c('HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG', 'DDEBF7', 'left', true)]);
+                    merges2.push({ s: { r: r2, c: 0 }, e: { r: r2, c: 7 } }); r2++;
+                    
+                    extraOptionData.forEach((item, idx) => {
+                        let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
+                        let actualPrice = currency === 'VND' ? item.price * exchangeRate : item.price;
+                        let actualTot = currency === 'VND' ? itemTotal * exchangeRate : itemTotal;
+
+                        detData.push([
+                            c(idx + 1, null, 'center', true),
+                            c('', null),
+                            c(`${item.name}\n${item.desc}`, null, 'left', false),
+                            c(item.unit, null, 'center', false),
+                            c(item.qty, null, 'center', true),
+                            c(actualPrice, null, 'center', false, moneyFmt),
+                            c(actualTot, null, 'center', true, moneyFmt),
                             c(item.detailNote || '', null, 'left', false)
                         ]); r2++;
                     });
@@ -568,18 +608,20 @@
                     if (floor.id === 'common') return;
                     let floorTotal = floor.systems.reduce((sum, sys) => sum + sys.items.reduce((s, i) => s + i.total, 0), 0);
                     grandTotal += floorTotal;
-                    
+                    let actualFloorTot = currency === 'VND' ? floorTotal * exchangeRate : floorTotal;
+
                     summaryData.push([
                         c(currentSTT++, 'F2F2F2', 'center', true),
                         c(floor.name.toUpperCase(), 'F2F2F2', 'left', true),
-                        c(floorTotal, 'F2F2F2', 'center', true),
+                        c(actualFloorTot, 'F2F2F2', 'center', true, moneyFmt),
                         c('', 'F2F2F2')
                     ]); r3++;
 
                     floor.systems.forEach((sys) => {
                         let sysTotal = sys.items.reduce((s, i) => s + i.total, 0);
+                        let actualSysTot = currency === 'VND' ? sysTotal * exchangeRate : sysTotal;
                         summaryData.push([
-                            c('', null), c(sys.name, null, 'left', false), c(sysTotal, null, 'center', false), c(summaryNotes[sys.id] || '', null, 'left', false)
+                            c('', null), c(sys.name, null, 'left', false), c(actualSysTot, null, 'center', false, moneyFmt), c(summaryNotes[sys.id] || '', null, 'left', false)
                         ]); r3++;
                     });
                 });
@@ -589,25 +631,31 @@
                     commonFloor.systems.forEach((sys) => {
                         let sysTotal = sys.items.reduce((s, i) => s + i.total, 0);
                         grandTotal += sysTotal;
+                        let actualSysTot = currency === 'VND' ? sysTotal * exchangeRate : sysTotal;
                         let defaultNote = sys.id.includes('An ninh') ? '- Báo trạng thái cửa ra vào tầng Trệt và cửa ra vào sân thượng' : (sys.id.includes('Điều hòa') ? '- Điều khiển toàn bộ dàn lạnh trong nhà.' : '');
                         summaryData.push([
-                            c(currentSTT++, null, 'center', true), c(sys.name.toUpperCase(), null, 'left', true), c(sysTotal, null, 'center', false), c(summaryNotes[sys.id] !== undefined ? summaryNotes[sys.id] : defaultNote, null, 'left', false)
+                            c(currentSTT++, null, 'center', true), c(sys.name.toUpperCase(), null, 'left', true), c(actualSysTot, null, 'center', false, moneyFmt), c(summaryNotes[sys.id] !== undefined ? summaryNotes[sys.id] : defaultNote, null, 'left', false)
                         ]); r3++;
                     });
                 }
 
+                let actualInstall = currency === 'VND' ? implementationCosts.install * exchangeRate : implementationCosts.install;
+                let actualDesign = currency === 'VND' ? implementationCosts.design * exchangeRate : implementationCosts.design;
+
                 summaryData.push([
-                    c(currentSTT++, null, 'center', true), c('CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT', null, 'left', true), c(implementationCosts.install, null, 'center', false), c(summaryNotes['install'] !== undefined ? summaryNotes['install'] : "- Triển khai bản vẽ nguyên lý điện thông minh...\n- Đấu nối tủ điện...\n- Cài đặt, chạy thử...", null, 'left', false)
+                    c(currentSTT++, null, 'center', true), c('CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT', null, 'left', true), c(actualInstall, null, 'center', false, moneyFmt), c(summaryNotes['install'] !== undefined ? summaryNotes['install'] : "- Triển khai bản vẽ nguyên lý điện thông minh...\n- Đấu nối tủ điện...\n- Cài đặt, chạy thử...", null, 'left', false)
                 ]); r3++;
                 summaryData.push([
-                    c(currentSTT++, null, 'center', true), c('CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG', null, 'left', true), c(implementationCosts.design, null, 'center', false), c(summaryNotes['design'] !== undefined ? summaryNotes['design'] : "- Lập trình hệ thống Smart home...\n- Lập trình giao diện Smart phone...", null, 'left', false)
+                    c(currentSTT++, null, 'center', true), c('CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG', null, 'left', true), c(actualDesign, null, 'center', false, moneyFmt), c(summaryNotes['design'] !== undefined ? summaryNotes['design'] : "- Lập trình hệ thống Smart home...\n- Lập trình giao diện Smart phone...", null, 'left', false)
                 ]); r3++;
 
-                summaryData.push([c('TỔNG GIÁ TRỊ SMARTHOME', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(grandTotal, 'E2EFDA', 'center', true), c('', 'E2EFDA')]); 
+                let actGTotal = currency === 'VND' ? grandTotal * exchangeRate : grandTotal;
+
+                summaryData.push([c('TỔNG GIÁ TRỊ SMARTHOME', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(actGTotal, 'E2EFDA', 'center', true, moneyFmt), c('', 'E2EFDA')]); 
                 merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
-                summaryData.push([c('THUẾ VAT 8%', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(grandTotal * 0.08, 'E2EFDA', 'center', true), c('', 'E2EFDA')]); 
+                summaryData.push([c('THUẾ VAT 8%', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(actGTotal * 0.08, 'E2EFDA', 'center', true, moneyFmt), c('', 'E2EFDA')]); 
                 merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
-                summaryData.push([c('TỔNG GIÁ TRỊ SMARTHOME SAU THUẾ', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(grandTotal * 1.08, 'E2EFDA', 'center', true), c('', 'E2EFDA')]); 
+                summaryData.push([c('TỔNG GIÁ TRỊ SMARTHOME SAU THUẾ', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(actGTotal * 1.08, 'E2EFDA', 'center', true, moneyFmt), c('', 'E2EFDA')]); 
                 merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
 
                 if (includeAudio) {
@@ -623,17 +671,43 @@
                     audioData.forEach((item, idx) => {
                         let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
                         audioTotal += itemTotal;
+                        let actItemTot = currency === 'VND' ? itemTotal * exchangeRate : itemTotal;
                         summaryData.push([
-                            c(idx + 1, null, 'center', true), c(`${item.name}\n${item.desc}`, null, 'left', false), c(itemTotal, null, 'center', false), c('', null)
+                            c(idx + 1, null, 'center', true), c(`${item.name}\n${item.desc}`, null, 'left', false), c(actItemTot, null, 'center', false, moneyFmt), c('', null)
                         ]); r3++;
                     });
                     
-                    summaryData.push([c('TỔNG GIÁ TRỊ PHẦN ÂM THANH', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(audioTotal, 'E2EFDA', 'center', true), c('', 'E2EFDA')]); merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
-                    summaryData.push([c('THUẾ VAT 8%', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(audioTotal * 0.08, 'E2EFDA', 'center', true), c('', 'E2EFDA')]); merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
-                    summaryData.push([c('TỔNG GIÁ TRỊ ÂM THANH SAU THUẾ', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(audioTotal * 1.08, 'E2EFDA', 'center', true), c('', 'E2EFDA')]); merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
+                    let actAuTot = currency === 'VND' ? audioTotal * exchangeRate : audioTotal;
+                    summaryData.push([c('TỔNG GIÁ TRỊ PHẦN ÂM THANH', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(actAuTot, 'E2EFDA', 'center', true, moneyFmt), c('', 'E2EFDA')]); merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
+                    summaryData.push([c('THUẾ VAT 8%', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(actAuTot * 0.08, 'E2EFDA', 'center', true, moneyFmt), c('', 'E2EFDA')]); merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
+                    summaryData.push([c('TỔNG GIÁ TRỊ ÂM THANH SAU THUẾ', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(actAuTot * 1.08, 'E2EFDA', 'center', true, moneyFmt), c('', 'E2EFDA')]); merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
                 }
 
-                // 4. KHỞI TẠO WORKBOOK VÀ TẢI XUỐNG
+                if (includeExtraOption) {
+                    summaryData.push(Array(4).fill(c('', null))); r3++;
+                    
+                    let extRow = Array(4).fill(c('', 'DDEBF7'));
+                    extRow[0] = c('HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG', 'DDEBF7', 'left', true);
+                    summaryData.push(extRow);
+                    merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 3 } });
+                    r3++;
+
+                    let extraTotal = 0;
+                    extraOptionData.forEach((item, idx) => {
+                        let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
+                        extraTotal += itemTotal;
+                        let actItemTot = currency === 'VND' ? itemTotal * exchangeRate : itemTotal;
+                        summaryData.push([
+                            c(idx + 1, null, 'center', true), c(`${item.name}\n${item.desc}`, null, 'left', false), c(actItemTot, null, 'center', false, moneyFmt), c('', null)
+                        ]); r3++;
+                    });
+                    
+                    let actExtTot = currency === 'VND' ? extraTotal * exchangeRate : extraTotal;
+                    summaryData.push([c('TỔNG GIÁ TRỊ PHẦN MỞ RỘNG', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(actExtTot, 'E2EFDA', 'center', true, moneyFmt), c('', 'E2EFDA')]); merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
+                    summaryData.push([c('THUẾ VAT 8%', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(actExtTot * 0.08, 'E2EFDA', 'center', true, moneyFmt), c('', 'E2EFDA')]); merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
+                    summaryData.push([c('TỔNG GIÁ TRỊ MỞ RỘNG SAU THUẾ', 'E2EFDA', 'center', true), c('', 'E2EFDA'), c(actExtTot * 1.08, 'E2EFDA', 'center', true, moneyFmt), c('', 'E2EFDA')]); merges3.push({ s: { r: r3, c: 0 }, e: { r: r3, c: 1 } }); r3++;
+                }
+
                 const ws1 = XLSX.utils.aoa_to_sheet(bomData); ws1['!merges'] = merges1;
                 ws1['!cols'] = [{wch: 5}, {wch: 40}, {wch: 10}, ...bomMap.floors.map(()=>({wch: 10})), {wch:10}, {wch:15}, {wch:15}];
                 
@@ -687,37 +761,35 @@
             const addNewItemToBOM = (categoryKey, categoryName) => {
                 const newItemId = `sp_${Date.now()}`;
                 const newItem = {
-                    id: newItemId,
-                    category: categoryKey,
-                    categoryName: categoryName,
-                    name: 'Tên thiết bị mới',
-                    desc: '', brand: '', unit: 'Chiếc', price: 0, quantities: {}
+                    id: newItemId, category: categoryKey, categoryName: categoryName,
+                    name: 'Tên thiết bị mới', desc: '', brand: '', unit: 'Chiếc', price: 0, quantities: {}
                 };
                 bomMap.floors.forEach(f => newItem.quantities[f.id] = '');
                 
                 setBomMap(prev => {
                     let newItems = [...prev.items];
                     let insertIndex = newItems.map(i => i.category).lastIndexOf(categoryKey);
-                    if (insertIndex !== -1) {
-                        newItems.splice(insertIndex + 1, 0, newItem);
-                    } else {
-                        newItems.push(newItem);
-                    }
+                    if (insertIndex !== -1) newItems.splice(insertIndex + 1, 0, newItem);
+                    else newItems.push(newItem);
                     return { ...prev, items: newItems };
                 });
                 showNotification(`Đã thêm thiết bị vào Hạng mục ${categoryName}`);
             };
 
             const addAudioItem = () => {
-                const newItemId = Date.now();
-                setAudioData([...audioData, { id: newItemId, name: 'Thiết bị âm thanh mới', desc: '', image: '', unit: 'Chiếc', qty: 1, price: 0 }]);
+                setAudioData([...audioData, { id: Date.now(), name: 'Thiết bị âm thanh mới', desc: '', image: '', unit: 'Chiếc', qty: 1, price: 0 }]);
                 showNotification("Đã thêm thiết bị âm thanh mới");
             };
-
             const deleteAudioItem = (idx) => {
-                const newD = [...audioData];
-                newD.splice(idx, 1);
-                setAudioData(newD);
+                const newD = [...audioData]; newD.splice(idx, 1); setAudioData(newD);
+            };
+
+            const addExtraOptionItem = () => {
+                setExtraOptionData([...extraOptionData, { id: Date.now(), name: 'Thiết bị mở rộng mới', desc: '', image: '', unit: 'Bộ', qty: 1, price: 0 }]);
+                showNotification("Đã thêm thiết bị mở rộng mới");
+            };
+            const deleteExtraOptionItem = (idx) => {
+                const newD = [...extraOptionData]; newD.splice(idx, 1); setExtraOptionData(newD);
             };
 
             const renderBOM = () => {
@@ -761,7 +833,6 @@
                                             </tr>
                                             {groupedItems[catKey].items.map((item, idx) => {
                                                 const totalQty = bomMap.floors.reduce((sum, f) => sum + (parseFloat(item.quantities[f.id]) || 0), 0);
-                                                
                                                 let displayPrice = item.price;
                                                 let displayTotal = totalQty * item.price;
                                                 if (item.isImplementationCost) {
@@ -1025,6 +1096,56 @@
                                 </table>
                             </div>
                         )}
+
+                        {includeExtraOption && (
+                            <div className="mt-4 page-break-before">
+                                <div className="text-blue-600 font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
+                                <table className="w-full border-collapse border border-black mb-4 text-[13px]">
+                                    <tbody>
+                                        {extraOptionData.map((item, idx) => (
+                                            <tr key={item.id} className="avoid-break group hover:bg-gray-50 bg-white">
+                                                <td className="border border-black p-1 text-center align-middle font-bold text-blue-600 w-10 relative">
+                                                    {idx + 1}
+                                                    <button onClick={() => deleteExtraOptionItem(idx)} className={`absolute top-1 left-1 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded print-hidden no-print ${isPreview ? 'hidden' : 'block'}`} title="Xóa thiết bị này">
+                                                        <Icon name="trash-2" className="w-3 h-3" />
+                                                    </button>
+                                                </td>
+                                                <td className="border border-black p-1 align-middle w-24 text-center">
+                                                    <ImageUpload value={item.image} onChange={(v) => {
+                                                        const newD = [...extraOptionData]; newD[idx].image = v; setExtraOptionData(newD);
+                                                    }} isEditing={!isPreview}/>
+                                                </td>
+                                                <td className="border border-black p-1 align-middle break-words min-w-0">
+                                                    <EditableInput value={item.name} onChange={v => { const newD = [...extraOptionData]; newD[idx].name = v; setExtraOptionData(newD); }} className="font-bold" isEditing={!isPreview} />
+                                                    <EditableInput value={item.desc} onChange={v => { const newD = [...extraOptionData]; newD[idx].desc = v; setExtraOptionData(newD); }} className="text-[12px] mt-1 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                </td>
+                                                <td className="border border-black p-1 text-center align-middle w-12">
+                                                    <EditableInput value={item.unit} onChange={v => { const newD = [...extraOptionData]; newD[idx].unit = v; setExtraOptionData(newD); }} className="text-center" isEditing={!isPreview} />
+                                                </td>
+                                                <td className="border border-black p-1 text-center align-middle w-10 font-bold">
+                                                    <EditableInput value={item.qty} onChange={v => { const newD = [...extraOptionData]; newD[idx].qty = v; setExtraOptionData(newD); }} className="text-center font-bold" isEditing={!isPreview} />
+                                                </td>
+                                                <td className="border border-black p-1 text-center align-middle w-20">
+                                                    <input type="number" value={item.price} onChange={(e) => { const newD = [...extraOptionData]; newD[idx].price = e.target.value; setExtraOptionData(newD); }} className={`w-full text-center bg-transparent border-none focus:ring-1 focus:ring-blue-500 outline-none ${isPreview ? 'hidden' : 'block'}`} />
+                                                    <div className={`text-center w-full ${isPreview ? 'block' : 'hidden'}`}>{formatMoney(item.price)}</div>
+                                                </td>
+                                                <td className="border border-black p-1 text-center align-middle font-bold w-24">{formatMoney((parseFloat(item.qty)||0) * (parseFloat(item.price)||0))}</td>
+                                                <td className="border border-black p-1 align-middle w-32">
+                                                    <EditableInput value={item.detailNote || ''} onChange={v => { const newD = [...extraOptionData]; newD[idx].detailNote = v; setExtraOptionData(newD); }} placeholder="Vị trí lắp đặt..." className="text-[11px] italic text-gray-700" isTextArea={true} isEditing={!isPreview} />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        <tr className={`print-hidden no-print bg-white ${isPreview ? 'hidden' : ''}`}>
+                                            <td colSpan={8} className="border border-black p-1 text-center">
+                                                <button onClick={addExtraOptionItem} className="text-[11px] text-blue-600 font-bold flex items-center justify-center w-full hover:bg-blue-50 py-1 rounded transition-colors">
+                                                    <Icon name="plus" className="w-3 h-3 mr-1" /> Thêm thiết bị mở rộng
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 );
             };
@@ -1032,6 +1153,7 @@
             const renderSummaryTable = () => {
                 let grandTotal = implementationCosts.design + implementationCosts.install;
                 let audioTotal = 0;
+                let extraTotal = 0;
                 let currentSTT = 1; 
 
                 return (
@@ -1188,6 +1310,44 @@
                             </div>
                         )}
 
+                        {includeExtraOption && (
+                            <div className="mt-6 page-break-before">
+                                <div className="text-blue-600 font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
+                                <table className="w-full border-collapse border border-black mb-4 text-[13px]">
+                                    <tbody>
+                                        {extraOptionData.map((item, idx) => {
+                                            let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
+                                            extraTotal += itemTotal;
+                                            return (
+                                                <tr key={item.id} className="avoid-break bg-white">
+                                                    <td className="border border-black p-1 text-center align-middle w-10 text-blue-600 font-bold">{idx + 1}</td>
+                                                    <td className="border border-black p-1">
+                                                        <div className="font-bold">
+                                                            <EditableInput value={item.name} onChange={v => { const newD = [...extraOptionData]; newD[idx].name = v; setExtraOptionData(newD); }} isEditing={!isPreview} />
+                                                        </div>
+                                                        <EditableInput value={item.desc} onChange={v => { const newD = [...extraOptionData]; newD[idx].desc = v; setExtraOptionData(newD); }} className="text-[12px] mt-0.5 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                    </td>
+                                                    <td className="border border-black p-1 text-center align-middle w-28 font-bold">{formatMoney(itemTotal)}</td>
+                                                </tr>
+                                            )
+                                        })}
+                                        <tr className="bg-[#e2efda] font-bold avoid-break">
+                                            <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ PHẦN MỞ RỘNG</td>
+                                            <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal)}</td>
+                                        </tr>
+                                        <tr className="bg-[#e2efda] font-bold avoid-break">
+                                            <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
+                                            <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal * 0.08)}</td>
+                                        </tr>
+                                        <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
+                                            <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ MỞ RỘNG SAU THUẾ</td>
+                                            <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal * 1.08)}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
                         <div className="mt-4 text-[13px] avoid-break page-break-before">
                             <h3 className="font-bold text-red-600 underline mb-2 uppercase">Điều kiện thương mại và phạm vi cung cấp:</h3>
                             <p className="font-bold underline mb-1">Giá đã bao gồm thuế VAT</p>
@@ -1232,7 +1392,6 @@
                         <span className="font-semibold text-sm">{notification}</span>
                     </div>
 
-                    {/* Thanh công cụ Xem trước bản in (Pill - Liquid Glass Style) */}
                     <div className={`fixed top-4 left-1/2 -translate-x-1/2 bg-gray-900/80 backdrop-blur-xl border border-white/10 text-white p-2 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] z-50 flex justify-center items-center gap-4 preview-toolbar print-hidden no-print transition-all duration-500 ${isPreview ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-24 pointer-events-none'}`}>
                         <div className="bg-black/40 px-5 py-2.5 rounded-xl border border-white/5 flex items-center gap-4 shadow-inner">
                             <div className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 uppercase tracking-widest text-sm flex items-center gap-2.5">
@@ -1262,10 +1421,8 @@
                         </div>
                     </div>
 
-                    {/* Thanh công cụ Soạn thảo (Gen Z Liquid Glass Style) */}
-                    <div className={`max-w-[1200px] mx-auto mt-6 bg-gray-900/80 backdrop-blur-xl border border-white/10 text-white p-2.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex justify-between items-center transition-all duration-300 no-print mb-8 ${isPreview ? 'hidden' : 'flex'}`}>
+                    <div className={`max-w-[1250px] mx-auto mt-6 bg-gray-900/80 backdrop-blur-xl border border-white/10 text-white p-2.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex justify-between items-center transition-all duration-300 no-print mb-8 ${isPreview ? 'hidden' : 'flex'}`}>
                         
-                        {/* Group 1: Navigation Tabs */}
                         <div className="flex gap-1.5 bg-black/40 p-1.5 rounded-xl border border-white/5 shadow-inner">
                             <button onClick={() => setActiveTab('bom')} className={`px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center ${activeTab === 'bom' ? 'bg-blue-500/30 text-blue-300 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}>BOM Kỹ thuật</button>
                             <button onClick={() => setActiveTab('summary')} className={`px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center ${activeTab === 'summary' ? 'bg-blue-500/30 text-blue-300 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}>Bảng Tổng Hợp</button>
@@ -1273,7 +1430,6 @@
                         </div>
 
                         <div className="flex items-center gap-4">
-                            {/* Group 2: Settings & Status */}
                             <div className="flex items-center gap-4 bg-black/40 p-2 px-4 rounded-xl border border-white/5 shadow-inner">
                                 <div className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-md transition-colors ${isDirty ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
                                     {isDirty ? "⚠️ Chưa lưu" : "✔️ Đã lưu"}
@@ -1284,6 +1440,10 @@
                                 <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-300 hover:text-white transition-colors">
                                     <input type="checkbox" checked={includeAudio} onChange={(e) => setIncludeAudio(e.target.checked)} className="w-4 h-4 rounded text-blue-500 bg-black/50 border border-white/20 accent-blue-500 cursor-pointer" />
                                     <span>+ Âm thanh</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-300 hover:text-white transition-colors">
+                                    <input type="checkbox" checked={includeExtraOption} onChange={(e) => setIncludeExtraOption(e.target.checked)} className="w-4 h-4 rounded text-purple-500 bg-black/50 border border-white/20 accent-purple-500 cursor-pointer" />
+                                    <span>+ Mở rộng</span>
                                 </label>
                                 
                                 <div className="w-px h-5 bg-white/10"></div>
@@ -1297,7 +1457,6 @@
                                 </div>
                             </div>
 
-                            {/* Group 3: Action Buttons */}
                             <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-xl border border-white/5 shadow-inner">
                                 <button onClick={handleExportExcel} className="flex items-center px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]" title="Xuất file Excel cho Báo giá">
                                     <Icon name="file-spreadsheet" className="w-4 h-4 mr-2" /> Xuất Excel
@@ -1317,7 +1476,7 @@
                         </div>
                     </div>
 
-                    <div className={`${isPreview ? 'mt-28' : ''} print-no-shadow print-container transition-all duration-300 ${!isPreview ? 'max-w-[1200px] mx-auto shadow-2xl bg-white p-10 rounded-2xl border border-gray-200' : (printLayout === 'portrait' ? 'a4-preview-portrait' : 'a4-preview-landscape')}`}>
+                    <div className={`${isPreview ? 'mt-28' : ''} print-no-shadow print-container transition-all duration-300 ${!isPreview ? 'max-w-[1250px] mx-auto shadow-2xl bg-white p-10 rounded-2xl border border-gray-200' : (printLayout === 'portrait' ? 'a4-preview-portrait' : 'a4-preview-landscape')}`}>
                         
                         <div className={activeTab === 'bom' ? 'hidden' : 'block'}>
                             <div className="flex justify-between items-start mb-4 border-b pb-4 avoid-break">
