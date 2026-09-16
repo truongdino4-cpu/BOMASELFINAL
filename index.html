@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công Cụ Báo Giá SmartHome</title>
+    <title>Công Cụ Báo Giá SmartHome ASEL</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+    
+    <!-- Thư viện xuất Excel xịn (giữ nguyên format, màu sắc, border) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
     <style>
         body { font-family: 'Inter', sans-serif; }
         
         @media print {
+            @page { margin: 10mm; }
             body { 
                 background-color: white !important; 
                 -webkit-print-color-adjust: exact !important; 
@@ -36,21 +39,36 @@
             textarea:empty, input:empty { display: none !important; }
             textarea::placeholder, input::placeholder { color: transparent !important; }
             
+            /* Chống cắt đôi dòng khi in, nhưng cho phép lặp tiêu đề bảng nếu bảng quá dài */
             tr, td, th, .avoid-break { 
                 page-break-inside: avoid !important; 
                 break-inside: avoid !important;
+                page-break-after: auto;
             }
+            
+            /* Ép tách trang */
             .page-break-before { page-break-before: always !important; }
             
             html, body { height: auto !important; min-height: auto !important; }
             .print-container { min-height: 0 !important; height: auto !important; padding: 0 !important; background-color: white !important;}
         }
 
+        /* Giao diện khung A4 xem trước */
         .a4-preview-portrait { width: 210mm; min-height: 297mm; margin: 0 auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); padding: 10mm; }
         .a4-preview-landscape { width: 297mm; min-height: 210mm; margin: 0 auto; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5); padding: 10mm; }
+
+        /* Ẩn mũi tên xoay ở ô nhập số % */
+        .hide-arrows::-webkit-outer-spin-button,
+        .hide-arrows::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .hide-arrows[type=number] {
+            -moz-appearance: textfield;
+        }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-900"> <!-- Nền web màu tối làm nổi bật A4 -->
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
@@ -163,6 +181,10 @@
             const [isDirty, setIsDirty] = useState(false);
             const [initialLoad, setInitialLoad] = useState(true);
 
+            // Các biến % chi phí triển khai
+            const [designFeePercent, setDesignFeePercent] = useState(12);
+            const [installFeePercent, setInstallFeePercent] = useState(13);
+
             const getTodayDate = () => {
                 const today = new Date();
                 return `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
@@ -254,8 +276,8 @@
                     { id: 't6', category: 'VII', categoryName: 'Tủ điện', name: 'Vật tư phụ', desc: '(jack chuyên dụng, dây điều khiển, lạt nhựa, băng keo, đầu nối...)', brand: 'VIỆT NAM', unit: 'Gói', price: 500, quantities: { tret: 1, t1: 0, t2: 0 } },
                     { id: 't7', category: 'VII', categoryName: 'Tủ điện', name: 'Tủ điện', desc: 'Tủ điện 2 lớp cánh, sơn tĩnh điện dày 1.5mm', brand: 'VIỆT NAM', unit: 'Gói', price: 500, quantities: { tret: 2, t1: 0, t2: 0 } },
                     
-                    { id: 'cp1', category: 'VIII', categoryName: 'CP - Chi phí triển khai', name: 'Thiết kế lập trình (12%)', desc: '', brand: '', unit: 'Gói', price: 0, quantities: { tret: 1, t1: 0, t2: 0 }, isImplementationCost: true, type: 'design' },
-                    { id: 'cp2', category: 'VIII', categoryName: 'CP - Chi phí triển khai', name: 'Thi công lắp đặt (13%)', desc: '', brand: '', unit: 'Gói', price: 0, quantities: { tret: 1, t1: 0, t2: 0 }, isImplementationCost: true, type: 'install' }
+                    { id: 'cp1', category: 'VIII', categoryName: 'CP - Chi phí triển khai', name: 'Thiết kế lập trình', desc: '', brand: '', unit: 'Gói', price: 0, quantities: { tret: 1, t1: 0, t2: 0 }, isImplementationCost: true, type: 'design' },
+                    { id: 'cp2', category: 'VIII', categoryName: 'CP - Chi phí triển khai', name: 'Thi công lắp đặt', desc: '', brand: '', unit: 'Gói', price: 0, quantities: { tret: 1, t1: 0, t2: 0 }, isImplementationCost: true, type: 'install' }
                 ]
             });
 
@@ -281,7 +303,7 @@
             useEffect(() => {
                 if (!initialLoad) setIsDirty(true);
                 else setInitialLoad(false);
-            }, [bomMap, headerInfo, audioData, extraOptionData, commercialTerms, exchangeRate, currency, includeAudio, includeExtraOption, summaryNotes]);
+            }, [bomMap, headerInfo, audioData, extraOptionData, commercialTerms, exchangeRate, currency, includeAudio, includeExtraOption, summaryNotes, designFeePercent, installFeePercent]);
 
             const hardwareTotal = useMemo(() => {
                 return bomMap.items.reduce((sum, item) => {
@@ -292,8 +314,11 @@
             }, [bomMap]);
 
             const implementationCosts = useMemo(() => {
-                return { design: hardwareTotal * 0.12, install: hardwareTotal * 0.13 };
-            }, [hardwareTotal]);
+                return { 
+                    design: hardwareTotal * (designFeePercent / 100), 
+                    install: hardwareTotal * (installFeePercent / 100) 
+                };
+            }, [hardwareTotal, designFeePercent, installFeePercent]);
 
             const ioCalculations = useMemo(() => {
                 const calc = { floors: {}, total: { input: 0, dinNeed: 0, dinReported: 0, missing: 0 } };
@@ -380,7 +405,11 @@
             };
 
             const handleExportData = () => {
-                const dataToSave = { headerInfo, bomMap, audioData, extraOptionData, commercialTerms, includeAudio, includeExtraOption, exchangeRate, currency, summaryNotes };
+                const dataToSave = { 
+                    headerInfo, bomMap, audioData, extraOptionData, commercialTerms, 
+                    includeAudio, includeExtraOption, exchangeRate, currency, summaryNotes,
+                    designFeePercent, installFeePercent 
+                };
                 const blob = new Blob([JSON.stringify(dataToSave, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -400,7 +429,15 @@
                     try {
                         const parsed = JSON.parse(event.target.result);
                         if (parsed.headerInfo) setHeaderInfo({...parsed.headerInfo, date: getTodayDate()});
-                        if (parsed.bomMap) setBomMap(parsed.bomMap);
+                        if (parsed.bomMap) {
+                            // Làm sạch tên nếu file cũ có chứa hardcode %
+                            const cleanedItems = parsed.bomMap.items.map(item => {
+                                if (item.id === 'cp1' && item.name.includes('(12%)')) return { ...item, name: 'Thiết kế lập trình' };
+                                if (item.id === 'cp2' && item.name.includes('(13%)')) return { ...item, name: 'Thi công lắp đặt' };
+                                return item;
+                            });
+                            setBomMap({ ...parsed.bomMap, items: cleanedItems });
+                        }
                         if (parsed.audioData) setAudioData(parsed.audioData);
                         if (parsed.extraOptionData) setExtraOptionData(parsed.extraOptionData);
                         if (parsed.commercialTerms) setCommercialTerms(parsed.commercialTerms);
@@ -409,6 +446,8 @@
                         if (parsed.exchangeRate) setExchangeRate(parsed.exchangeRate);
                         if (parsed.currency) setCurrency(parsed.currency);
                         if (parsed.summaryNotes) setSummaryNotes(parsed.summaryNotes);
+                        if (parsed.designFeePercent !== undefined) setDesignFeePercent(parsed.designFeePercent);
+                        if (parsed.installFeePercent !== undefined) setInstallFeePercent(parsed.installFeePercent);
                         setIsDirty(false);
                         showNotification("Mở file dự án thành công!");
                     } catch (err) {
@@ -475,14 +514,19 @@
                         const totalQty = bomMap.floors.reduce((sum, f) => sum + (parseFloat(item.quantities[f.id]) || 0), 0);
                         let displayPrice = item.price;
                         let displayTotal = totalQty * item.price;
+                        let displayItemName = item.name;
+
                         if (item.isImplementationCost) {
                             displayPrice = item.type === 'design' ? implementationCosts.design : implementationCosts.install;
                             displayTotal = displayPrice; 
+                            displayItemName += ` (${item.type === 'design' ? designFeePercent : installFeePercent}%)`;
+                        } else if (item.isMechanical) {
+                            displayItemName += ' (Chỉ tính IO)';
                         }
 
                         let row = [
                             c(idx + 1, item.isMechanical ? 'F2F2F2' : null, 'center', true),
-                            c(`${item.name}${item.isMechanical ? ' (Chỉ tính IO)' : ''}`, item.isMechanical ? 'F2F2F2' : null, 'left', false),
+                            c(displayItemName, item.isMechanical ? 'F2F2F2' : null, 'left', false),
                             c(item.unit, item.isMechanical ? 'F2F2F2' : null, 'center', false)
                         ];
 
@@ -643,10 +687,10 @@
                 let actualDesign = currency === 'VND' ? implementationCosts.design * exchangeRate : implementationCosts.design;
 
                 summaryData.push([
-                    c(currentSTT++, null, 'center', true), c('CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT', null, 'left', true), c(actualInstall, null, 'center', false, moneyFmt), c(summaryNotes['install'] !== undefined ? summaryNotes['install'] : "- Triển khai bản vẽ nguyên lý điện thông minh...\n- Đấu nối tủ điện...\n- Cài đặt, chạy thử...", null, 'left', false)
+                    c(currentSTT++, null, 'center', true), c(`CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT (${installFeePercent}%)`, null, 'left', true), c(actualInstall, null, 'center', false, moneyFmt), c(summaryNotes['install'] !== undefined ? summaryNotes['install'] : "- Triển khai bản vẽ nguyên lý điện thông minh...\n- Đấu nối tủ điện...\n- Cài đặt, chạy thử...", null, 'left', false)
                 ]); r3++;
                 summaryData.push([
-                    c(currentSTT++, null, 'center', true), c('CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG', null, 'left', true), c(actualDesign, null, 'center', false, moneyFmt), c(summaryNotes['design'] !== undefined ? summaryNotes['design'] : "- Lập trình hệ thống Smart home...\n- Lập trình giao diện Smart phone...", null, 'left', false)
+                    c(currentSTT++, null, 'center', true), c(`CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG (${designFeePercent}%)`, null, 'left', true), c(actualDesign, null, 'center', false, moneyFmt), c(summaryNotes['design'] !== undefined ? summaryNotes['design'] : "- Lập trình hệ thống Smart home...\n- Lập trình giao diện Smart phone...", null, 'left', false)
                 ]); r3++;
 
                 let actGTotal = currency === 'VND' ? grandTotal * exchangeRate : grandTotal;
@@ -844,10 +888,35 @@
                                                     <tr key={item.id} className={`avoid-break ${item.isMechanical ? "text-gray-600 bg-gray-50" : "bg-white"}`}>
                                                         <td className="border border-black p-1 text-center font-bold w-8">{idx + 1}</td>
                                                         <td className="border border-black p-1">
-                                                            <div className="font-bold flex justify-between items-center group/item">
-                                                                <EditableInput value={item.name} onChange={(v) => {
-                                                                    setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, name: v} : i)});
-                                                                }} isEditing={!isPreview} className="flex-1" />
+                                                            <div className="font-bold flex justify-between items-center group/item w-full">
+                                                                <div className="flex items-center flex-1">
+                                                                    <EditableInput value={item.name} onChange={(v) => {
+                                                                        setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, name: v} : i)});
+                                                                    }} isEditing={!isPreview} className="flex-1" />
+                                                                    
+                                                                    {item.isImplementationCost && (
+                                                                        <div className={`ml-2 flex items-center text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded text-[11px] print-no-shadow print-hidden no-print ${isPreview ? 'hidden' : 'flex'}`}>
+                                                                            (
+                                                                            <input
+                                                                                type="number"
+                                                                                value={item.type === 'design' ? designFeePercent : installFeePercent}
+                                                                                onChange={(e) => {
+                                                                                    const val = Number(e.target.value);
+                                                                                    if (item.type === 'design') setDesignFeePercent(val);
+                                                                                    else setInstallFeePercent(val);
+                                                                                }}
+                                                                                className="w-8 text-center bg-transparent border-b border-blue-400 focus:outline-none focus:border-blue-600 hide-arrows text-blue-700 font-bold px-0.5 mx-0.5"
+                                                                            />
+                                                                            %)
+                                                                        </div>
+                                                                    )}
+                                                                    {item.isImplementationCost && isPreview && (
+                                                                        <span className="ml-1 text-blue-800">
+                                                                            ({item.type === 'design' ? designFeePercent : installFeePercent}%)
+                                                                        </span>
+                                                                    )}
+
+                                                                </div>
                                                                 {!item.isImplementationCost && (
                                                                     <button onClick={() => deleteItemFromBOM(item.id)} className={`text-red-500 opacity-0 group-hover/item:opacity-100 transition-opacity ml-2 print-hidden no-print ${isPreview ? 'hidden' : 'block'}`} title="Xóa thiết bị này">
                                                                         <Icon name="trash-2" className="w-3 h-3" />
@@ -1230,7 +1299,7 @@
                                 <tr className="font-bold avoid-break bg-white">
                                     <td className="border border-black p-1 text-center">{currentSTT++}</td>
                                     <td className="border border-black p-1">
-                                        <span className="uppercase">CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT</span>
+                                        <span className="uppercase">CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT ({installFeePercent}%)</span>
                                         <EditableInput 
                                             value={summaryNotes['install'] !== undefined ? summaryNotes['install'] : "- Triển khai bản vẽ nguyên lý điện thông minh, cập nhật bản vẽ và hướng dẫn thi công định kì\n- Đấu nối tủ điện, lắp đặt các thiết bị điều khiển.\n- Đấu nối công tắc, cảm biến.\n- Kết nối điều hòa.\n- Chạy thử, hiệu chỉnh, thay đổi, bàn giao, bảo hành."} 
                                             onChange={(v) => setSummaryNotes(prev => ({...prev, 'install': v}))} 
@@ -1245,7 +1314,7 @@
                                 <tr className="font-bold avoid-break bg-white">
                                     <td className="border border-black p-1 text-center">{currentSTT++}</td>
                                     <td className="border border-black p-1">
-                                        <span className="uppercase">CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG</span>
+                                        <span className="uppercase">CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG ({designFeePercent}%)</span>
                                         <EditableInput 
                                             value={summaryNotes['design'] !== undefined ? summaryNotes['design'] : "- Lập trình hệ thống Smart home. Điều khiển toàn bộ các hạng mục: chiếu sáng, rèm, điều hòa, an ninh, cổng....\n- Lập trình, thiết kế giao diện trên Smart phone\n- Lập trình, thiết kế giao diện trên màn hình cảm ứng"} 
                                             onChange={(v) => setSummaryNotes(prev => ({...prev, 'design': v}))} 
@@ -1385,9 +1454,9 @@
             };
 
             return (
-                <div className={`min-h-screen pb-10 ${isPreview ? 'bg-gray-200 print:bg-white print:pb-0' : 'bg-gray-100'} font-sans`}>
+                <div className={`min-h-screen pb-10 ${isPreview ? 'bg-gray-200 print:bg-white print:pb-0' : 'bg-gray-900'} font-sans`}>
                     
-                    <div className={`fixed bottom-6 right-6 bg-gray-900/90 backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.3)] border border-white/10 z-50 items-center print-hidden no-print transition-all duration-300 ${notification ? 'flex opacity-100 translate-y-0' : 'hidden opacity-0 translate-y-4'}`}>
+                    <div className={`fixed bottom-6 right-6 bg-gray-800/90 backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/10 z-50 flex items-center print-hidden no-print transition-all duration-500 ${notification ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
                         <Icon name="info" className="w-5 h-5 mr-3 text-blue-400" />
                         <span className="font-semibold text-sm">{notification}</span>
                     </div>
@@ -1421,7 +1490,7 @@
                         </div>
                     </div>
 
-                    <div className={`max-w-[1250px] mx-auto mt-6 bg-gray-900/80 backdrop-blur-xl border border-white/10 text-white p-2.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex justify-between items-center transition-all duration-300 no-print mb-8 ${isPreview ? 'hidden' : 'flex'}`}>
+                    <div className={`max-w-[1250px] mx-auto mt-6 bg-gray-800/80 backdrop-blur-xl border border-white/5 text-white p-2.5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.4)] flex justify-between items-center transition-all duration-300 no-print mb-8 ${isPreview ? 'hidden' : 'flex'}`}>
                         
                         <div className="flex gap-1.5 bg-black/40 p-1.5 rounded-xl border border-white/5 shadow-inner">
                             <button onClick={() => setActiveTab('bom')} className={`px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center ${activeTab === 'bom' ? 'bg-blue-500/30 text-blue-300 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'}`}>BOM Kỹ thuật</button>
@@ -1449,7 +1518,7 @@
                                 <div className="w-px h-5 bg-white/10"></div>
                                 
                                 <div className="flex items-center gap-2">
-                                    <select value={currency} onChange={e => setCurrency(e.target.value)} className="bg-transparent border-none text-blue-300 font-bold focus:ring-0 cursor-pointer outline-none text-sm appearance-none">
+                                    <select value={currency} onChange={e => setCurrency(e.target.value)} className="bg-transparent border-none text-blue-400 font-bold focus:ring-0 cursor-pointer outline-none text-sm appearance-none">
                                         <option value="USD" className="bg-gray-800 text-white">USD</option>
                                         <option value="VND" className="bg-gray-800 text-white">VNĐ</option>
                                     </select>
@@ -1458,13 +1527,13 @@
                             </div>
 
                             <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-xl border border-white/5 shadow-inner">
-                                <button onClick={handleExportExcel} className="flex items-center px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]" title="Xuất file Excel cho Báo giá">
+                                <button onClick={handleExportExcel} className="flex items-center px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 rounded-lg text-sm font-semibold transition-all duration-300 hover:shadow-[0_0_15px_rgba(34,197,94,0.3)]" title="Xuất file Excel cho Báo giá">
                                     <Icon name="file-spreadsheet" className="w-4 h-4 mr-2" /> Xuất Excel
                                 </button>
                                 <button onClick={handleExportData} className="flex items-center px-4 py-2 bg-gray-500/20 hover:bg-gray-500/40 text-gray-300 border border-gray-500/30 rounded-lg text-sm font-semibold transition-all duration-300" title="Lưu Data dự án JSON">
                                     <Icon name="download" className="w-4 h-4 mr-2" /> Lưu JSON
                                 </button>
-                                <label className="flex items-center px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 border border-orange-500/30 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 hover:shadow-[0_0_15px_rgba(249,115,22,0.3)]" title="Mở Data dự án JSON">
+                                <label className="flex items-center px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/30 rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 hover:shadow-[0_0_15px_rgba(249,115,22,0.3)]" title="Mở Data dự án JSON">
                                     <Icon name="upload" className="w-4 h-4 mr-2" /> Mở File
                                     <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
                                 </label>
