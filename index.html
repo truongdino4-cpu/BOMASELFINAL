@@ -39,8 +39,8 @@
             textarea:empty, input:empty { display: none !important; }
             textarea::placeholder, input::placeholder { color: transparent !important; }
             
-            /* Chống cắt đôi dòng khi in, nhưng cho phép lặp tiêu đề bảng nếu bảng quá dài */
-            tr, td, th, .avoid-break { 
+            /* Chống cắt đôi dòng/khối khi in */
+            tr, td, th, .avoid-break, tbody.avoid-break { 
                 page-break-inside: avoid !important; 
                 break-inside: avoid !important;
                 page-break-after: auto;
@@ -68,7 +68,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-900"> <!-- Nền web màu tối làm nổi bật A4 -->
+<body class="bg-gray-900">
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
@@ -430,7 +430,6 @@
                         const parsed = JSON.parse(event.target.result);
                         if (parsed.headerInfo) setHeaderInfo({...parsed.headerInfo, date: getTodayDate()});
                         if (parsed.bomMap) {
-                            // Làm sạch tên nếu file cũ có chứa hardcode %
                             const cleanedItems = parsed.bomMap.items.map(item => {
                                 if (item.id === 'cp1' && item.name.includes('(12%)')) return { ...item, name: 'Thiết kế lập trình' };
                                 if (item.id === 'cp2' && item.name.includes('(13%)')) return { ...item, name: 'Thi công lắp đặt' };
@@ -686,11 +685,12 @@
                 let actualInstall = currency === 'VND' ? implementationCosts.install * exchangeRate : implementationCosts.install;
                 let actualDesign = currency === 'VND' ? implementationCosts.design * exchangeRate : implementationCosts.design;
 
+                // Xóa % khi xuất excel
                 summaryData.push([
-                    c(currentSTT++, null, 'center', true), c(`CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT (${installFeePercent}%)`, null, 'left', true), c(actualInstall, null, 'center', false, moneyFmt), c(summaryNotes['install'] !== undefined ? summaryNotes['install'] : "- Triển khai bản vẽ nguyên lý điện thông minh...\n- Đấu nối tủ điện...\n- Cài đặt, chạy thử...", null, 'left', false)
+                    c(currentSTT++, null, 'center', true), c('CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT', null, 'left', true), c(actualInstall, null, 'center', false, moneyFmt), c(summaryNotes['install'] !== undefined ? summaryNotes['install'] : "- Triển khai bản vẽ nguyên lý điện thông minh...\n- Đấu nối tủ điện...\n- Cài đặt, chạy thử...", null, 'left', false)
                 ]); r3++;
                 summaryData.push([
-                    c(currentSTT++, null, 'center', true), c(`CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG (${designFeePercent}%)`, null, 'left', true), c(actualDesign, null, 'center', false, moneyFmt), c(summaryNotes['design'] !== undefined ? summaryNotes['design'] : "- Lập trình hệ thống Smart home...\n- Lập trình giao diện Smart phone...", null, 'left', false)
+                    c(currentSTT++, null, 'center', true), c('CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG', null, 'left', true), c(actualDesign, null, 'center', false, moneyFmt), c(summaryNotes['design'] !== undefined ? summaryNotes['design'] : "- Lập trình hệ thống Smart home...\n- Lập trình giao diện Smart phone...", null, 'left', false)
                 ]); r3++;
 
                 let actGTotal = currency === 'VND' ? grandTotal * exchangeRate : grandTotal;
@@ -910,11 +910,6 @@
                                                                             %)
                                                                         </div>
                                                                     )}
-                                                                    {item.isImplementationCost && isPreview && (
-                                                                        <span className="ml-1 text-blue-800">
-                                                                            ({item.type === 'design' ? designFeePercent : installFeePercent}%)
-                                                                        </span>
-                                                                    )}
 
                                                                 </div>
                                                                 {!item.isImplementationCost && (
@@ -1118,12 +1113,12 @@
                         
                         {includeAudio && (
                             <div className="mt-4 page-break-before">
-                                <div className="text-red-600 font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
+                                <div className="font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
                                         {audioData.map((item, idx) => (
                                             <tr key={item.id} className="avoid-break group hover:bg-gray-50 bg-white">
-                                                <td className="border border-black p-1 text-center align-middle font-bold text-red-600 w-10 relative">
+                                                <td className="border border-black p-1 text-center align-middle font-bold w-10 relative">
                                                     {idx + 1}
                                                     <button onClick={() => deleteAudioItem(idx)} className={`absolute top-1 left-1 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded print-hidden no-print ${isPreview ? 'hidden' : 'block'}`} title="Xóa thiết bị này">
                                                         <Icon name="trash-2" className="w-3 h-3" />
@@ -1156,7 +1151,7 @@
                                         ))}
                                         <tr className={`print-hidden no-print bg-white ${isPreview ? 'hidden' : ''}`}>
                                             <td colSpan={8} className="border border-black p-1 text-center">
-                                                <button onClick={addAudioItem} className="text-[11px] text-red-600 font-bold flex items-center justify-center w-full hover:bg-red-50 py-1 rounded transition-colors">
+                                                <button onClick={addAudioItem} className="text-[11px] text-gray-700 font-bold flex items-center justify-center w-full hover:bg-gray-100 py-1 rounded transition-colors">
                                                     <Icon name="plus" className="w-3 h-3 mr-1" /> Thêm thiết bị âm thanh
                                                 </button>
                                             </td>
@@ -1168,12 +1163,12 @@
 
                         {includeExtraOption && (
                             <div className="mt-4 page-break-before">
-                                <div className="text-blue-600 font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
+                                <div className="font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
                                         {extraOptionData.map((item, idx) => (
                                             <tr key={item.id} className="avoid-break group hover:bg-gray-50 bg-white">
-                                                <td className="border border-black p-1 text-center align-middle font-bold text-blue-600 w-10 relative">
+                                                <td className="border border-black p-1 text-center align-middle font-bold w-10 relative">
                                                     {idx + 1}
                                                     <button onClick={() => deleteExtraOptionItem(idx)} className={`absolute top-1 left-1 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded print-hidden no-print ${isPreview ? 'hidden' : 'block'}`} title="Xóa thiết bị này">
                                                         <Icon name="trash-2" className="w-3 h-3" />
@@ -1206,7 +1201,7 @@
                                         ))}
                                         <tr className={`print-hidden no-print bg-white ${isPreview ? 'hidden' : ''}`}>
                                             <td colSpan={8} className="border border-black p-1 text-center">
-                                                <button onClick={addExtraOptionItem} className="text-[11px] text-blue-600 font-bold flex items-center justify-center w-full hover:bg-blue-50 py-1 rounded transition-colors">
+                                                <button onClick={addExtraOptionItem} className="text-[11px] text-gray-700 font-bold flex items-center justify-center w-full hover:bg-gray-100 py-1 rounded transition-colors">
                                                     <Icon name="plus" className="w-3 h-3 mr-1" /> Thêm thiết bị mở rộng
                                                 </button>
                                             </td>
@@ -1221,8 +1216,6 @@
 
             const renderSummaryTable = () => {
                 let grandTotal = implementationCosts.design + implementationCosts.install;
-                let audioTotal = 0;
-                let extraTotal = 0;
                 let currentSTT = 1; 
 
                 return (
@@ -1236,70 +1229,75 @@
                                     <td className="border border-black p-1 w-28">Giá trị ({currency})</td>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {detailedData.map((floor) => {
-                                    if (floor.id === 'common') return null; 
-                                    let floorTotal = floor.systems.reduce((sum, sys) => sum + sys.items.reduce((s, i) => s + i.total, 0), 0);
-                                    grandTotal += floorTotal;
-                                    
-                                    return (
-                                        <Fragment key={floor.id}>
-                                            <tr className="font-bold bg-gray-50 avoid-break">
-                                                <td className="border border-black p-1 text-center">{currentSTT++}</td>
-                                                <td className="border border-black p-1 uppercase">{floor.name}</td>
-                                                <td className="border border-black p-1 text-center">{formatMoney(floorTotal)}</td>
-                                            </tr>
-                                            {floor.systems.map((sys) => {
-                                                let sysTotal = sys.items.reduce((s, i) => s + i.total, 0);
-                                                return (
-                                                    <tr key={sys.id} className="avoid-break bg-white">
-                                                        <td className="border border-black p-1 text-center"></td>
-                                                        <td className="border border-black p-1 pl-6">
-                                                            <span className="uppercase">{sys.name}</span>
-                                                            <EditableInput 
-                                                                value={summaryNotes[sys.id] || ''} 
-                                                                onChange={(v) => setSummaryNotes(prev => ({...prev, [sys.id]: v}))} 
-                                                                placeholder="Ghi chú..." 
-                                                                isTextArea={true} 
-                                                                isEditing={!isPreview} 
-                                                                className="text-[11px] block text-gray-600 mt-0.5 normal-case font-normal" 
-                                                            />
-                                                        </td>
-                                                        <td className="border border-black p-1 text-center">{formatMoney(sysTotal)}</td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </Fragment>
-                                    );
-                                })}
-
-                                {detailedData.find(f => f.id === 'common')?.systems.map((sys) => {
-                                    let sysTotal = sys.items.reduce((s, i) => s + i.total, 0);
-                                    grandTotal += sysTotal;
-                                    let defaultNote = sys.id.includes('An ninh') ? '- Báo trạng thái cửa ra vào tầng Trệt và cửa ra vào sân thượng' : (sys.id.includes('Điều hòa') ? '- Điều khiển toàn bộ dàn lạnh trong nhà.' : '');
-                                    return (
-                                        <tr className="font-bold avoid-break bg-white" key={sys.id}>
+                            
+                            {detailedData.map((floor) => {
+                                if (floor.id === 'common') return null; 
+                                let floorTotal = floor.systems.reduce((sum, sys) => sum + sys.items.reduce((s, i) => s + i.total, 0), 0);
+                                grandTotal += floorTotal;
+                                
+                                return (
+                                    <tbody key={floor.id} className="avoid-break">
+                                        <tr className="font-bold bg-gray-50">
                                             <td className="border border-black p-1 text-center">{currentSTT++}</td>
-                                            <td className="border border-black p-1">
-                                                <span className="uppercase">{sys.name}</span>
-                                                <EditableInput 
-                                                    value={summaryNotes[sys.id] !== undefined ? summaryNotes[sys.id] : defaultNote} 
-                                                    onChange={(v) => setSummaryNotes(prev => ({...prev, [sys.id]: v}))} 
-                                                    placeholder="Ghi chú..." 
-                                                    isTextArea={true} 
-                                                    isEditing={!isPreview} 
-                                                    className="text-[11px] block text-gray-600 mt-0.5 normal-case font-normal" 
-                                                />
-                                            </td>
-                                            <td className="border border-black p-1 text-center">{formatMoney(sysTotal)}</td>
+                                            <td className="border border-black p-1 uppercase">{floor.name}</td>
+                                            <td className="border border-black p-1 text-center">{formatMoney(floorTotal)}</td>
                                         </tr>
-                                    );
-                                })}
+                                        {floor.systems.map((sys) => {
+                                            let sysTotal = sys.items.reduce((s, i) => s + i.total, 0);
+                                            return (
+                                                <tr key={sys.id} className="bg-white">
+                                                    <td className="border border-black p-1 text-center"></td>
+                                                    <td className="border border-black p-1 pl-6">
+                                                        <span className="uppercase">{sys.name}</span>
+                                                        <EditableInput 
+                                                            value={summaryNotes[sys.id] || ''} 
+                                                            onChange={(v) => setSummaryNotes(prev => ({...prev, [sys.id]: v}))} 
+                                                            placeholder="Ghi chú..." 
+                                                            isTextArea={true} 
+                                                            isEditing={!isPreview} 
+                                                            className="text-[11px] block text-gray-600 mt-0.5 normal-case font-normal" 
+                                                        />
+                                                    </td>
+                                                    <td className="border border-black p-1 text-center">{formatMoney(sysTotal)}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                );
+                            })}
 
-                                <tr className="font-bold avoid-break bg-white">
+                            {detailedData.find(f => f.id === 'common') && (
+                                <tbody className="avoid-break">
+                                    {detailedData.find(f => f.id === 'common').systems.map((sys) => {
+                                        let sysTotal = sys.items.reduce((s, i) => s + i.total, 0);
+                                        grandTotal += sysTotal;
+                                        let defaultNote = sys.id.includes('An ninh') ? '- Báo trạng thái cửa ra vào tầng Trệt và cửa ra vào sân thượng' : (sys.id.includes('Điều hòa') ? '- Điều khiển toàn bộ dàn lạnh trong nhà.' : '');
+                                        return (
+                                            <tr className="font-bold bg-white" key={sys.id}>
+                                                <td className="border border-black p-1 text-center">{currentSTT++}</td>
+                                                <td className="border border-black p-1">
+                                                    <span className="uppercase">{sys.name}</span>
+                                                    <EditableInput 
+                                                        value={summaryNotes[sys.id] !== undefined ? summaryNotes[sys.id] : defaultNote} 
+                                                        onChange={(v) => setSummaryNotes(prev => ({...prev, [sys.id]: v}))} 
+                                                        placeholder="Ghi chú..." 
+                                                        isTextArea={true} 
+                                                        isEditing={!isPreview} 
+                                                        className="text-[11px] block text-gray-600 mt-0.5 normal-case font-normal" 
+                                                    />
+                                                </td>
+                                                <td className="border border-black p-1 text-center">{formatMoney(sysTotal)}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            )}
+
+                            <tbody className="avoid-break">
+                                <tr className="font-bold bg-white">
                                     <td className="border border-black p-1 text-center">{currentSTT++}</td>
                                     <td className="border border-black p-1">
-                                        <span className="uppercase">CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT ({installFeePercent}%)</span>
+                                        <span className="uppercase">CHI PHÍ TRIỂN KHAI GIÁM SÁT, LẮP ĐẶT</span>
                                         <EditableInput 
                                             value={summaryNotes['install'] !== undefined ? summaryNotes['install'] : "- Triển khai bản vẽ nguyên lý điện thông minh, cập nhật bản vẽ và hướng dẫn thi công định kì\n- Đấu nối tủ điện, lắp đặt các thiết bị điều khiển.\n- Đấu nối công tắc, cảm biến.\n- Kết nối điều hòa.\n- Chạy thử, hiệu chỉnh, thay đổi, bàn giao, bảo hành."} 
                                             onChange={(v) => setSummaryNotes(prev => ({...prev, 'install': v}))} 
@@ -1310,11 +1308,13 @@
                                     </td>
                                     <td className="border border-black p-1 text-center">{formatMoney(implementationCosts.install)}</td>
                                 </tr>
+                            </tbody>
 
-                                <tr className="font-bold avoid-break bg-white">
+                            <tbody className="avoid-break">
+                                <tr className="font-bold bg-white">
                                     <td className="border border-black p-1 text-center">{currentSTT++}</td>
                                     <td className="border border-black p-1">
-                                        <span className="uppercase">CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG ({designFeePercent}%)</span>
+                                        <span className="uppercase">CHI PHÍ THIẾT KẾ, LẬP TRÌNH, SETUP HỆ THỐNG</span>
                                         <EditableInput 
                                             value={summaryNotes['design'] !== undefined ? summaryNotes['design'] : "- Lập trình hệ thống Smart home. Điều khiển toàn bộ các hạng mục: chiếu sáng, rèm, điều hòa, an ninh, cổng....\n- Lập trình, thiết kế giao diện trên Smart phone\n- Lập trình, thiết kế giao diện trên màn hình cảm ứng"} 
                                             onChange={(v) => setSummaryNotes(prev => ({...prev, 'design': v}))} 
@@ -1325,16 +1325,18 @@
                                     </td>
                                     <td className="border border-black p-1 text-center">{formatMoney(implementationCosts.design)}</td>
                                 </tr>
+                            </tbody>
 
-                                <tr className="bg-[#e2efda] font-bold avoid-break">
+                            <tbody className="avoid-break">
+                                <tr className="bg-[#e2efda] font-bold">
                                     <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ SMARTHOME</td>
                                     <td className="border border-black p-2 text-center font-bold">{formatMoney(grandTotal)}</td>
                                 </tr>
-                                <tr className="bg-[#e2efda] font-bold avoid-break">
+                                <tr className="bg-[#e2efda] font-bold">
                                     <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
                                     <td className="border border-black p-2 text-center font-bold">{formatMoney(grandTotal * 0.08)}</td>
                                 </tr>
-                                <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
+                                <tr className="bg-[#e2efda] font-bold border-b border-black">
                                     <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ SMARTHOME SAU THUẾ</td>
                                     <td className="border border-black p-2 text-center font-bold">{formatMoney(grandTotal * 1.08)}</td>
                                 </tr>
@@ -1343,15 +1345,14 @@
 
                         {includeAudio && (
                             <div className="mt-6 page-break-before">
-                                <div className="text-red-600 font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
+                                <div className="font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
                                         {audioData.map((item, idx) => {
                                             let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
-                                            audioTotal += itemTotal;
                                             return (
                                                 <tr key={item.id} className="avoid-break bg-white">
-                                                    <td className="border border-black p-1 text-center align-middle w-10 text-red-600 font-bold">{idx + 1}</td>
+                                                    <td className="border border-black p-1 text-center align-middle w-10 font-bold">{idx + 1}</td>
                                                     <td className="border border-black p-1">
                                                         <div className="font-bold">
                                                             <EditableInput value={item.name} onChange={v => { const newD = [...audioData]; newD[idx].name = v; setAudioData(newD); }} isEditing={!isPreview} />
@@ -1362,18 +1363,25 @@
                                                 </tr>
                                             )
                                         })}
-                                        <tr className="bg-[#e2efda] font-bold avoid-break">
-                                            <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ PHẦN ÂM THANH</td>
-                                            <td className="border border-black p-2 text-center font-bold">{formatMoney(audioTotal)}</td>
-                                        </tr>
-                                        <tr className="bg-[#e2efda] font-bold avoid-break">
-                                            <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
-                                            <td className="border border-black p-2 text-center font-bold">{formatMoney(audioTotal * 0.08)}</td>
-                                        </tr>
-                                        <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
-                                            <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ ÂM THANH SAU THUẾ</td>
-                                            <td className="border border-black p-2 text-center font-bold">{formatMoney(audioTotal * 1.08)}</td>
-                                        </tr>
+                                        {(() => {
+                                            let audioTotal = audioData.reduce((sum, item) => sum + (parseFloat(item.qty)||0) * (parseFloat(item.price)||0), 0);
+                                            return (
+                                                <Fragment>
+                                                    <tr className="bg-[#e2efda] font-bold avoid-break">
+                                                        <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ PHẦN ÂM THANH</td>
+                                                        <td className="border border-black p-2 text-center font-bold">{formatMoney(audioTotal)}</td>
+                                                    </tr>
+                                                    <tr className="bg-[#e2efda] font-bold avoid-break">
+                                                        <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
+                                                        <td className="border border-black p-2 text-center font-bold">{formatMoney(audioTotal * 0.08)}</td>
+                                                    </tr>
+                                                    <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
+                                                        <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ ÂM THANH SAU THUẾ</td>
+                                                        <td className="border border-black p-2 text-center font-bold">{formatMoney(audioTotal * 1.08)}</td>
+                                                    </tr>
+                                                </Fragment>
+                                            );
+                                        })()}
                                     </tbody>
                                 </table>
                             </div>
@@ -1381,15 +1389,14 @@
 
                         {includeExtraOption && (
                             <div className="mt-6 page-break-before">
-                                <div className="text-blue-600 font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
+                                <div className="font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
                                         {extraOptionData.map((item, idx) => {
                                             let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
-                                            extraTotal += itemTotal;
                                             return (
                                                 <tr key={item.id} className="avoid-break bg-white">
-                                                    <td className="border border-black p-1 text-center align-middle w-10 text-blue-600 font-bold">{idx + 1}</td>
+                                                    <td className="border border-black p-1 text-center align-middle w-10 font-bold">{idx + 1}</td>
                                                     <td className="border border-black p-1">
                                                         <div className="font-bold">
                                                             <EditableInput value={item.name} onChange={v => { const newD = [...extraOptionData]; newD[idx].name = v; setExtraOptionData(newD); }} isEditing={!isPreview} />
@@ -1400,25 +1407,32 @@
                                                 </tr>
                                             )
                                         })}
-                                        <tr className="bg-[#e2efda] font-bold avoid-break">
-                                            <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ PHẦN MỞ RỘNG</td>
-                                            <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal)}</td>
-                                        </tr>
-                                        <tr className="bg-[#e2efda] font-bold avoid-break">
-                                            <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
-                                            <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal * 0.08)}</td>
-                                        </tr>
-                                        <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
-                                            <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ MỞ RỘNG SAU THUẾ</td>
-                                            <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal * 1.08)}</td>
-                                        </tr>
+                                        {(() => {
+                                            let extraTotal = extraOptionData.reduce((sum, item) => sum + (parseFloat(item.qty)||0) * (parseFloat(item.price)||0), 0);
+                                            return (
+                                                <Fragment>
+                                                    <tr className="bg-[#e2efda] font-bold avoid-break">
+                                                        <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ PHẦN MỞ RỘNG</td>
+                                                        <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal)}</td>
+                                                    </tr>
+                                                    <tr className="bg-[#e2efda] font-bold avoid-break">
+                                                        <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
+                                                        <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal * 0.08)}</td>
+                                                    </tr>
+                                                    <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
+                                                        <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ MỞ RỘNG SAU THUẾ</td>
+                                                        <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal * 1.08)}</td>
+                                                    </tr>
+                                                </Fragment>
+                                            );
+                                        })()}
                                     </tbody>
                                 </table>
                             </div>
                         )}
 
                         <div className="mt-4 text-[13px] avoid-break page-break-before">
-                            <h3 className="font-bold text-red-600 underline mb-2 uppercase">Điều kiện thương mại và phạm vi cung cấp:</h3>
+                            <h3 className="font-bold underline mb-2 uppercase">Điều kiện thương mại và phạm vi cung cấp:</h3>
                             <p className="font-bold underline mb-1">Giá đã bao gồm thuế VAT</p>
                             <table className="w-full mb-3">
                                 <tbody>
