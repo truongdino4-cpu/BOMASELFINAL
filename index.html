@@ -40,7 +40,7 @@
             textarea::placeholder, input::placeholder { color: transparent !important; }
             
             /* Chống cắt đôi dòng/khối khi in */
-            tr, td, th, .avoid-break, tbody.avoid-break { 
+            tr, td, th, .avoid-break { 
                 page-break-inside: avoid !important; 
                 break-inside: avoid !important;
                 page-break-after: auto;
@@ -868,7 +868,7 @@
                                 <tbody>
                                     {Object.keys(groupedItems).map((catKey) => (
                                         <Fragment key={catKey}>
-                                            <tr className="bg-[#e2efda] font-bold avoid-break">
+                                            <tr className="bg-[#e2efda] font-bold">
                                                 <td className="border border-black p-1 text-center">{catKey}</td>
                                                 <td className="border border-black p-1 uppercase" colSpan={bomMap.floors.length + 5}>{groupedItems[catKey].categoryName}</td>
                                             </tr>
@@ -877,12 +877,12 @@
                                                 let displayPrice = item.price;
                                                 let displayTotal = totalQty * item.price;
                                                 if (item.isImplementationCost) {
-                                                   displayPrice = item.type === 'design' ? implementationCosts.design : implementationCosts.install;
-                                                   displayTotal = displayPrice; 
+                                                displayPrice = item.type === 'design' ? implementationCosts.design : implementationCosts.install;
+                                                displayTotal = displayPrice; 
                                                 }
 
                                                 return (
-                                                    <tr key={item.id} className={`avoid-break ${item.isMechanical ? "text-gray-600 bg-gray-50" : "bg-white"}`}>
+                                                    <tr key={item.id} className={`${item.isMechanical ? "text-gray-600 bg-gray-50" : "bg-white"}`}>
                                                         <td className="border border-black p-1 text-center font-bold w-8">{idx + 1}</td>
                                                         <td className="border border-black p-1">
                                                             <div className="font-bold flex justify-between items-center group/item w-full">
@@ -965,11 +965,11 @@
                                         </Fragment>
                                     ))}
 
-                                    <tr className="bg-[#e2efda] font-bold mt-2 avoid-break">
+                                    <tr className="bg-[#e2efda] font-bold mt-2">
                                         <td className="border border-black p-1 text-center">IX</td>
                                         <td className="border border-black p-1 uppercase" colSpan={bomMap.floors.length + 5}>TÍNH TOÁN ĐẦU VÀO IO</td>
                                     </tr>
-                                    <tr className="avoid-break bg-white">
+                                    <tr className="bg-white">
                                         <td className="border border-black p-1 text-center">1</td>
                                         <td className="border border-black p-1">Tổng số đầu vào Input</td>
                                         <td className="border border-black p-1 text-center">-</td>
@@ -979,7 +979,7 @@
                                         <td className="border border-black p-1 text-center font-bold bg-orange-50">{ioCalculations.total.input || ''}</td>
                                         <td className="border border-black p-1 text-center" colSpan={2}>-</td>
                                     </tr>
-                                    <tr className="avoid-break bg-white">
+                                    <tr className="bg-white">
                                         <td className="border border-black p-1 text-center">2</td>
                                         <td className="border border-black p-1">Số bộ DIN8s-8i CẦN (Làm tròn lên)</td>
                                         <td className="border border-black p-1 text-center">Bộ</td>
@@ -989,7 +989,7 @@
                                         <td className="border border-black p-1 text-center font-bold">{ioCalculations.total.dinNeed || ''}</td>
                                         <td className="border border-black p-1 text-center" colSpan={2}>-</td>
                                     </tr>
-                                    <tr className="avoid-break bg-white">
+                                    <tr className="bg-white">
                                         <td className="border border-black p-1 text-center">3</td>
                                         <td className="border border-black p-1">Tổng số bộ Din ĐÃ BÁO</td>
                                         <td className="border border-black p-1 text-center">Bộ</td>
@@ -999,7 +999,7 @@
                                         <td className="border border-black p-1 text-center font-bold bg-blue-100">{ioCalculations.total.dinReported || ''}</td>
                                         <td className="border border-black p-1 text-center" colSpan={2}>-</td>
                                     </tr>
-                                    <tr className="avoid-break bg-white">
+                                    <tr className="bg-white">
                                         <td className="border border-black p-1 text-center">4</td>
                                         <td className="border border-black p-1 font-bold text-red-600">Số lượng CẦN BỔ SUNG</td>
                                         <td className="border border-black p-1 text-center">Bộ</td>
@@ -1027,7 +1027,7 @@
                     <div className="w-full">
                         <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                             <thead>
-                                <tr className="bg-[#fff2cc] font-bold text-center avoid-break">
+                                <tr className="bg-[#fff2cc] font-bold text-center">
                                     <td className="border border-black p-1 w-10">STT</td>
                                     <td className="border border-black p-1 w-24">Hình ảnh</td>
                                     <td className="border border-black p-1">Hạng mục / Mô tả / Hãng / Xuất xứ</td>
@@ -1040,7 +1040,7 @@
                             </thead>
                             
                             {detailedData.map((floor) => (
-                                <tbody key={floor.id} className="avoid-break">
+                                <tbody key={floor.id}>
                                     <tr className="bg-[#e2efda] font-bold text-sm">
                                         <td colSpan={8} className="border border-black p-1 uppercase pl-2">
                                             <EditableInput value={floor.name} onChange={() => {}} isEditing={false} />
@@ -1108,7 +1108,7 @@
                         </table>
                         
                         {includeAudio && (
-                            <div className="mt-4 avoid-break">
+                            <div className="mt-4">
                                 <div className="font-bold text-[13px] uppercase mb-1 text-black">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
@@ -1158,7 +1158,7 @@
                         )}
 
                         {includeExtraOption && (
-                            <div className="mt-4 avoid-break">
+                            <div className="mt-4">
                                 <div className="font-bold text-[13px] uppercase mb-1 text-black">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
@@ -1219,7 +1219,7 @@
                         <h2 className="text-[16px] font-bold text-center mb-4 uppercase">BẢNG DỰ TOÁN TỔNG HỢP PHƯƠNG ÁN {headerInfo.plan}</h2>
                         <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                             <thead>
-                                <tr className="bg-[#a9d08e] font-bold text-center avoid-break">
+                                <tr className="bg-[#a9d08e] font-bold text-center">
                                     <td className="border border-black p-1 w-10">STT</td>
                                     <td className="border border-black p-1">HẠNG MỤC ĐIỀU KHIỂN</td>
                                     <td className="border border-black p-1 w-28">Giá trị ({currency})</td>
@@ -1232,7 +1232,7 @@
                                 grandTotal += floorTotal;
                                 
                                 return (
-                                    <tbody key={floor.id} className="avoid-break">
+                                    <tbody key={floor.id}>
                                         <tr className="font-bold bg-gray-50">
                                             <td className="border border-black p-1 text-center">{currentSTT++}</td>
                                             <td className="border border-black p-1 uppercase">{floor.name}</td>
@@ -1263,7 +1263,7 @@
                             })}
 
                             {detailedData.find(f => f.id === 'common') && (
-                                <tbody className="avoid-break">
+                                <tbody>
                                     {detailedData.find(f => f.id === 'common').systems.map((sys) => {
                                         let sysTotal = sys.items.reduce((s, i) => s + i.total, 0);
                                         grandTotal += sysTotal;
@@ -1289,7 +1289,7 @@
                                 </tbody>
                             )}
 
-                            <tbody className="avoid-break">
+                            <tbody>
                                 <tr className="font-bold bg-white">
                                     <td className="border border-black p-1 text-center">{currentSTT++}</td>
                                     <td className="border border-black p-1">
@@ -1306,7 +1306,7 @@
                                 </tr>
                             </tbody>
 
-                            <tbody className="avoid-break">
+                            <tbody>
                                 <tr className="font-bold bg-white">
                                     <td className="border border-black p-1 text-center">{currentSTT++}</td>
                                     <td className="border border-black p-1">
@@ -1323,7 +1323,7 @@
                                 </tr>
                             </tbody>
 
-                            <tbody className="avoid-break">
+                            <tbody>
                                 <tr className="bg-[#e2efda] font-bold">
                                     <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ SMARTHOME</td>
                                     <td className="border border-black p-2 text-center font-bold">{formatMoney(grandTotal)}</td>
@@ -1340,7 +1340,7 @@
                         </table>
 
                         {includeAudio && (
-                            <div className="mt-6 avoid-break">
+                            <div className="mt-6">
                                 <div className="font-bold text-[13px] uppercase mb-1 text-black">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
@@ -1384,7 +1384,7 @@
                         )}
 
                         {includeExtraOption && (
-                            <div className="mt-6 avoid-break">
+                            <div className="mt-6">
                                 <div className="font-bold text-[13px] uppercase mb-1 text-black">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
@@ -1427,13 +1427,13 @@
                             </div>
                         )}
 
-                        <div className="mt-4 text-[13px] avoid-break">
+                        <div className="mt-4 text-[13px]">
                             <h3 className="font-bold underline mb-2 uppercase">Điều kiện thương mại và phạm vi cung cấp:</h3>
                             <p className="font-bold underline mb-1">Giá đã bao gồm thuế VAT</p>
                             <table className="w-full mb-3">
                                 <tbody>
                                     {commercialTerms.slice(0, 4).map((term, idx) => (
-                                        <tr key={idx} className="avoid-break">
+                                        <tr key={idx}>
                                             <td className="w-40 py-1 align-top font-bold">{term.label}</td>
                                             <td className="py-1">
                                                 <EditableInput value={term.value} onChange={(v) => {
@@ -1445,15 +1445,15 @@
                                 </tbody>
                             </table>
 
-                            <p className="font-bold underline mt-2 mb-1 avoid-break">Phạm vi cung cấp:</p>
-                            <div className="pl-4 avoid-break">
+                            <p className="font-bold underline mt-2 mb-1">Phạm vi cung cấp:</p>
+                            <div className="pl-4">
                                 <EditableInput value={commercialTerms[4].value} onChange={(v) => {
                                     const newTerms = [...commercialTerms]; newTerms[4].value = v; setCommercialTerms(newTerms);
                                 }} isTextArea={true} isEditing={!isPreview} className="leading-tight"/>
                             </div>
 
-                            <p className="font-bold underline mt-2 mb-1 avoid-break">Phạm vi không cung cấp (chưa bao gồm):</p>
-                            <div className="pl-4 avoid-break">
+                            <p className="font-bold underline mt-2 mb-1">Phạm vi không cung cấp (chưa bao gồm):</p>
+                            <div className="pl-4">
                                 <EditableInput value={commercialTerms[5].value} onChange={(v) => {
                                     const newTerms = [...commercialTerms]; newTerms[5].value = v; setCommercialTerms(newTerms);
                                 }} isTextArea={true} isEditing={!isPreview} className="leading-tight"/>
@@ -1475,8 +1475,8 @@
                         <div className="bg-black/40 px-5 py-2.5 rounded-xl border border-white/5 flex items-center gap-4 shadow-inner">
                             <div className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400 uppercase tracking-widest text-sm flex items-center gap-2.5">
                                 <span className="relative flex h-3 w-3">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
                                 </span>
                                 XEM TRƯỚC BẢN IN
                             </div>
