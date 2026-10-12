@@ -46,9 +46,6 @@
                 page-break-after: auto;
             }
             
-            /* Ép tách trang */
-            .page-break-before { page-break-before: always !important; }
-            
             html, body { height: auto !important; min-height: auto !important; }
             .print-container { min-height: 0 !important; height: auto !important; padding: 0 !important; background-color: white !important;}
         }
@@ -1041,84 +1038,83 @@
                                     <td className="border border-black p-1 w-32">Ghi chú</td>
                                 </tr>
                             </thead>
-                            <tbody>
-                                {detailedData.map((floor) => (
-                                    <Fragment key={floor.id}>
-                                        <tr className="bg-[#e2efda] font-bold text-sm avoid-break">
-                                            <td colSpan={8} className="border border-black p-1 uppercase pl-2">
-                                                <EditableInput value={floor.name} onChange={() => {}} isEditing={false} />
-                                            </td>
-                                        </tr>
-                                        {floor.systems.map((system, sysIndex) => (
-                                            <Fragment key={system.id}>
-                                                <tr className="font-bold bg-white avoid-break">
-                                                    <td className="border border-black p-1 text-center">{sysIndex + 1}</td>
-                                                    <td colSpan={7} className="border border-black p-1 uppercase">{system.name}</td>
+                            
+                            {detailedData.map((floor) => (
+                                <tbody key={floor.id} className="avoid-break">
+                                    <tr className="bg-[#e2efda] font-bold text-sm">
+                                        <td colSpan={8} className="border border-black p-1 uppercase pl-2">
+                                            <EditableInput value={floor.name} onChange={() => {}} isEditing={false} />
+                                        </td>
+                                    </tr>
+                                    {floor.systems.map((system, sysIndex) => (
+                                        <Fragment key={system.id}>
+                                            <tr className="font-bold bg-white">
+                                                <td className="border border-black p-1 text-center">{sysIndex + 1}</td>
+                                                <td colSpan={7} className="border border-black p-1 uppercase">{system.name}</td>
+                                            </tr>
+                                            {system.items.map((item, itemIdx) => (
+                                                <tr key={item.id} className="group hover:bg-gray-50 bg-white">
+                                                    <td className="border border-black p-1 text-center align-middle relative font-bold">
+                                                        {sysIndex + 1}.{itemIdx + 1}
+                                                        <button onClick={() => deleteItemFromDetail(floor.id, item.id)} className={`absolute top-1 left-1 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded print-hidden ${isPreview ? 'hidden' : 'block'}`}>
+                                                            <Icon name="trash-2" className="w-3 h-3" />
+                                                        </button>
+                                                    </td>
+                                                    <td className="border border-black p-1 align-middle text-center">
+                                                        <ImageUpload sku={item.id} value={item.image} onChange={(v) => {
+                                                            setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, image: v} : i)});
+                                                        }} isEditing={!isPreview}/>
+                                                    </td>
+                                                    <td className="border border-black p-1 align-middle break-words min-w-0">
+                                                        <div className="font-bold mb-1">
+                                                            <EditableInput value={item.name} onChange={(v) => {
+                                                                setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, name: v} : i)});
+                                                            }} isEditing={!isPreview} />
+                                                        </div>
+                                                        <EditableInput value={item.desc} onChange={(v) => {
+                                                            setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, desc: v} : i)});
+                                                        }} placeholder="Mô tả kỹ thuật..." className="text-[12px] text-gray-700 italic leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                        <EditableInput value={item.brand} onChange={(v) => {
+                                                            setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, brand: v} : i)});
+                                                        }} placeholder="Hãng / Xuất xứ" className="text-[12px] mt-1 text-gray-500 uppercase" isEditing={!isPreview} />
+                                                    </td>
+                                                    <td className="border border-black p-1 text-center align-middle">{item.unit}</td>
+                                                    <td className="border border-black p-1 text-center align-middle font-bold">
+                                                        {floor.id === 'common' ? item.qty : (
+                                                            <EditableInput value={item.qty} onChange={(v) => updateBOMQuantity(floor.id, item.id, v)} className="text-center font-bold" isEditing={!isPreview} />
+                                                        )}
+                                                    </td>
+                                                    <td className="border border-black p-1 text-center align-middle">
+                                                        <input type="number" value={item.price} onChange={(e) => { setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, price: e.target.value} : i)}); }} className={`w-full text-center bg-transparent border-none focus:ring-1 focus:ring-blue-500 outline-none ${isPreview ? 'hidden' : 'block'}`} />
+                                                        <div className={`text-center w-full ${isPreview ? 'block' : 'hidden'}`}>{formatMoney(item.price)}</div>
+                                                    </td>
+                                                    <td className="border border-black p-1 text-center align-middle font-bold">
+                                                        {formatMoney(item.total)}
+                                                    </td>
+                                                    <td className="border border-black p-1 align-middle">
+                                                        <EditableInput value={(item.notes && item.notes[floor.id]) || ''} onChange={(v) => {
+                                                                setBomMap(prev => ({
+                                                                    ...prev,
+                                                                    items: prev.items.map(i => i.id === item.id ? { ...i, notes: { ...(i.notes || {}), [floor.id]: v } } : i)
+                                                                }));
+                                                            }} placeholder="Vị trí lắp đặt..." className="text-[11px] italic text-gray-700" isTextArea={true} isEditing={!isPreview} />
+                                                    </td>
                                                 </tr>
-                                                {system.items.map((item, itemIdx) => (
-                                                    <tr key={item.id} className="group hover:bg-gray-50 avoid-break bg-white">
-                                                        <td className="border border-black p-1 text-center align-middle relative font-bold">
-                                                            {sysIndex + 1}.{itemIdx + 1}
-                                                            <button onClick={() => deleteItemFromDetail(floor.id, item.id)} className={`absolute top-1 left-1 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded print-hidden ${isPreview ? 'hidden' : 'block'}`}>
-                                                                <Icon name="trash-2" className="w-3 h-3" />
-                                                            </button>
-                                                        </td>
-                                                        <td className="border border-black p-1 align-middle text-center">
-                                                            <ImageUpload sku={item.id} value={item.image} onChange={(v) => {
-                                                                setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, image: v} : i)});
-                                                            }} isEditing={!isPreview}/>
-                                                        </td>
-                                                        <td className="border border-black p-1 align-middle break-words min-w-0">
-                                                            <div className="font-bold mb-1">
-                                                                <EditableInput value={item.name} onChange={(v) => {
-                                                                    setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, name: v} : i)});
-                                                                }} isEditing={!isPreview} />
-                                                            </div>
-                                                            <EditableInput value={item.desc} onChange={(v) => {
-                                                                setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, desc: v} : i)});
-                                                            }} placeholder="Mô tả kỹ thuật..." className="text-[12px] text-gray-700 italic leading-tight" isTextArea={true} isEditing={!isPreview} />
-                                                            <EditableInput value={item.brand} onChange={(v) => {
-                                                                setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, brand: v} : i)});
-                                                            }} placeholder="Hãng / Xuất xứ" className="text-[12px] mt-1 text-gray-500 uppercase" isEditing={!isPreview} />
-                                                        </td>
-                                                        <td className="border border-black p-1 text-center align-middle">{item.unit}</td>
-                                                        <td className="border border-black p-1 text-center align-middle font-bold">
-                                                            {floor.id === 'common' ? item.qty : (
-                                                                <EditableInput value={item.qty} onChange={(v) => updateBOMQuantity(floor.id, item.id, v)} className="text-center font-bold" isEditing={!isPreview} />
-                                                            )}
-                                                        </td>
-                                                        <td className="border border-black p-1 text-center align-middle">
-                                                            <input type="number" value={item.price} onChange={(e) => { setBomMap({...bomMap, items: bomMap.items.map(i => i.id === item.id ? {...i, price: e.target.value} : i)}); }} className={`w-full text-center bg-transparent border-none focus:ring-1 focus:ring-blue-500 outline-none ${isPreview ? 'hidden' : 'block'}`} />
-                                                            <div className={`text-center w-full ${isPreview ? 'block' : 'hidden'}`}>{formatMoney(item.price)}</div>
-                                                        </td>
-                                                        <td className="border border-black p-1 text-center align-middle font-bold">
-                                                            {formatMoney(item.total)}
-                                                        </td>
-                                                        <td className="border border-black p-1 align-middle">
-                                                            <EditableInput value={(item.notes && item.notes[floor.id]) || ''} onChange={(v) => {
-                                                                    setBomMap(prev => ({
-                                                                        ...prev,
-                                                                        items: prev.items.map(i => i.id === item.id ? { ...i, notes: { ...(i.notes || {}), [floor.id]: v } } : i)
-                                                                    }));
-                                                                }} placeholder="Vị trí lắp đặt..." className="text-[11px] italic text-gray-700" isTextArea={true} isEditing={!isPreview} />
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </Fragment>
-                                        ))}
-                                    </Fragment>
-                                ))}
-                            </tbody>
+                                            ))}
+                                        </Fragment>
+                                    ))}
+                                </tbody>
+                            ))}
                         </table>
                         
                         {includeAudio && (
-                            <div className="mt-4 page-break-before">
-                                <div className="font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
+                            <div className="mt-4 avoid-break">
+                                <div className="font-bold text-[13px] uppercase mb-1 text-black">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
                                         {audioData.map((item, idx) => (
-                                            <tr key={item.id} className="avoid-break group hover:bg-gray-50 bg-white">
-                                                <td className="border border-black p-1 text-center align-middle font-bold w-10 relative">
+                                            <tr key={item.id} className="group hover:bg-gray-50 bg-white">
+                                                <td className="border border-black p-1 text-center align-middle font-bold w-10 relative text-black">
                                                     {idx + 1}
                                                     <button onClick={() => deleteAudioItem(idx)} className={`absolute top-1 left-1 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded print-hidden no-print ${isPreview ? 'hidden' : 'block'}`} title="Xóa thiết bị này">
                                                         <Icon name="trash-2" className="w-3 h-3" />
@@ -1162,13 +1158,13 @@
                         )}
 
                         {includeExtraOption && (
-                            <div className="mt-4 page-break-before">
-                                <div className="font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
+                            <div className="mt-4 avoid-break">
+                                <div className="font-bold text-[13px] uppercase mb-1 text-black">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
                                         {extraOptionData.map((item, idx) => (
-                                            <tr key={item.id} className="avoid-break group hover:bg-gray-50 bg-white">
-                                                <td className="border border-black p-1 text-center align-middle font-bold w-10 relative">
+                                            <tr key={item.id} className="group hover:bg-gray-50 bg-white">
+                                                <td className="border border-black p-1 text-center align-middle font-bold w-10 relative text-black">
                                                     {idx + 1}
                                                     <button onClick={() => deleteExtraOptionItem(idx)} className={`absolute top-1 left-1 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded print-hidden no-print ${isPreview ? 'hidden' : 'block'}`} title="Xóa thiết bị này">
                                                         <Icon name="trash-2" className="w-3 h-3" />
@@ -1344,15 +1340,15 @@
                         </table>
 
                         {includeAudio && (
-                            <div className="mt-6 page-break-before">
-                                <div className="font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
+                            <div className="mt-6 avoid-break">
+                                <div className="font-bold text-[13px] uppercase mb-1 text-black">HẠNG MỤC NÂNG CAO: OPTION (ÂM THANH ĐA VÙNG)</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
                                         {audioData.map((item, idx) => {
                                             let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
                                             return (
-                                                <tr key={item.id} className="avoid-break bg-white">
-                                                    <td className="border border-black p-1 text-center align-middle w-10 font-bold">{idx + 1}</td>
+                                                <tr key={item.id} className="bg-white">
+                                                    <td className="border border-black p-1 text-center align-middle w-10 font-bold text-black">{idx + 1}</td>
                                                     <td className="border border-black p-1">
                                                         <div className="font-bold">
                                                             <EditableInput value={item.name} onChange={v => { const newD = [...audioData]; newD[idx].name = v; setAudioData(newD); }} isEditing={!isPreview} />
@@ -1367,15 +1363,15 @@
                                             let audioTotal = audioData.reduce((sum, item) => sum + (parseFloat(item.qty)||0) * (parseFloat(item.price)||0), 0);
                                             return (
                                                 <Fragment>
-                                                    <tr className="bg-[#e2efda] font-bold avoid-break">
+                                                    <tr className="bg-[#e2efda] font-bold">
                                                         <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ PHẦN ÂM THANH</td>
                                                         <td className="border border-black p-2 text-center font-bold">{formatMoney(audioTotal)}</td>
                                                     </tr>
-                                                    <tr className="bg-[#e2efda] font-bold avoid-break">
+                                                    <tr className="bg-[#e2efda] font-bold">
                                                         <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
                                                         <td className="border border-black p-2 text-center font-bold">{formatMoney(audioTotal * 0.08)}</td>
                                                     </tr>
-                                                    <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
+                                                    <tr className="bg-[#e2efda] font-bold border-b border-black">
                                                         <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ ÂM THANH SAU THUẾ</td>
                                                         <td className="border border-black p-2 text-center font-bold">{formatMoney(audioTotal * 1.08)}</td>
                                                     </tr>
@@ -1388,15 +1384,15 @@
                         )}
 
                         {includeExtraOption && (
-                            <div className="mt-6 page-break-before">
-                                <div className="font-bold text-[13px] uppercase mb-1">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
+                            <div className="mt-6 avoid-break">
+                                <div className="font-bold text-[13px] uppercase mb-1 text-black">HẠNG MỤC NÂNG CAO: OPTION MỞ RỘNG</div>
                                 <table className="w-full border-collapse border border-black mb-4 text-[13px]">
                                     <tbody>
                                         {extraOptionData.map((item, idx) => {
                                             let itemTotal = (parseFloat(item.qty)||0) * (parseFloat(item.price)||0);
                                             return (
-                                                <tr key={item.id} className="avoid-break bg-white">
-                                                    <td className="border border-black p-1 text-center align-middle w-10 font-bold">{idx + 1}</td>
+                                                <tr key={item.id} className="bg-white">
+                                                    <td className="border border-black p-1 text-center align-middle w-10 font-bold text-black">{idx + 1}</td>
                                                     <td className="border border-black p-1">
                                                         <div className="font-bold">
                                                             <EditableInput value={item.name} onChange={v => { const newD = [...extraOptionData]; newD[idx].name = v; setExtraOptionData(newD); }} isEditing={!isPreview} />
@@ -1411,15 +1407,15 @@
                                             let extraTotal = extraOptionData.reduce((sum, item) => sum + (parseFloat(item.qty)||0) * (parseFloat(item.price)||0), 0);
                                             return (
                                                 <Fragment>
-                                                    <tr className="bg-[#e2efda] font-bold avoid-break">
+                                                    <tr className="bg-[#e2efda] font-bold">
                                                         <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ PHẦN MỞ RỘNG</td>
                                                         <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal)}</td>
                                                     </tr>
-                                                    <tr className="bg-[#e2efda] font-bold avoid-break">
+                                                    <tr className="bg-[#e2efda] font-bold">
                                                         <td className="border border-black p-2 text-center" colSpan={2}>THUẾ VAT 8%</td>
                                                         <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal * 0.08)}</td>
                                                     </tr>
-                                                    <tr className="bg-[#e2efda] font-bold avoid-break border-b border-black">
+                                                    <tr className="bg-[#e2efda] font-bold border-b border-black">
                                                         <td className="border border-black p-2 text-center" colSpan={2}>TỔNG GIÁ TRỊ MỞ RỘNG SAU THUẾ</td>
                                                         <td className="border border-black p-2 text-center font-bold">{formatMoney(extraTotal * 1.08)}</td>
                                                     </tr>
@@ -1431,7 +1427,7 @@
                             </div>
                         )}
 
-                        <div className="mt-4 text-[13px] avoid-break page-break-before">
+                        <div className="mt-4 text-[13px] avoid-break">
                             <h3 className="font-bold underline mb-2 uppercase">Điều kiện thương mại và phạm vi cung cấp:</h3>
                             <p className="font-bold underline mb-1">Giá đã bao gồm thuế VAT</p>
                             <table className="w-full mb-3">
