@@ -96,10 +96,30 @@
             const textareaRef = useRef(null);
 
             useEffect(() => {
-                if (isTextArea && textareaRef.current && isEditing) {
-                    textareaRef.current.style.height = 'auto';
-                    textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+                const el = textareaRef.current;
+                if (!isTextArea || !el || !isEditing) return;
+
+                const adjustHeight = () => {
+                    // Chỉ tính toán lại chiều cao khi phần tử đang hiển thị trên màn hình (không nằm trong tab ẩn)
+                    if (el.offsetParent !== null) {
+                        el.style.height = 'auto';
+                        el.style.height = Math.max(el.scrollHeight, 22) + 'px';
+                    } else {
+                        el.style.height = 'auto';
+                    }
+                };
+
+                adjustHeight();
+
+                // Tự động bung chiều cao chuẩn xác ngay khi người dùng chuyển tab hoặc thoát chế độ Xem trước
+                let ro;
+                if (typeof ResizeObserver !== 'undefined') {
+                    ro = new ResizeObserver(adjustHeight);
+                    ro.observe(el);
                 }
+                return () => {
+                    if (ro) ro.disconnect();
+                };
             }, [value, isEditing, isTextArea]);
 
             if (isTextArea) {
@@ -110,9 +130,9 @@
                             value={value || ''}
                             onChange={e => onChange(e.target.value)}
                             placeholder={placeholder}
-                            className={`w-full bg-transparent border-none focus:ring-1 focus:ring-blue-500 resize-none outline-none overflow-hidden ${className} ${!isEditing ? 'hidden' : 'block'}`}
+                            className={`w-full min-h-[22px] bg-transparent border-none focus:ring-1 focus:ring-blue-500 rounded px-0.5 resize-none outline-none overflow-hidden ${className} ${!isEditing ? 'hidden' : 'block'}`}
                             rows={1}
-                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+                            onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = Math.max(e.target.scrollHeight, 22) + 'px'; }}
                         />
                         <div className={`whitespace-pre-wrap ${className} ${!isEditing ? 'block' : 'hidden'}`}>
                             {value}
@@ -435,6 +455,14 @@
                 setTimeout(() => setNotification(''), 4000);
             };
 
+            // Lấy ghi chú ở Bảng Tổng Hợp (Tương thích cả khóa mới lẫn khóa từ file JSON cũ)
+            const getSummaryNote = (sys, floorId, defaultNote = '') => {
+                if (summaryNotes[sys.id] !== undefined) return summaryNotes[sys.id];
+                const legacyKey = `${floorId}_${sys.name}`;
+                if (summaryNotes[legacyKey] !== undefined) return summaryNotes[legacyKey];
+                return defaultNote;
+            };
+
             // Đổi tên hạng mục đồng bộ trên toàn bộ các bảng
             const updateCategoryName = (categoryKey, newName) => {
                 setBomMap(prev => ({
@@ -752,7 +780,7 @@
                             c('', null), 
                             c(sys.name.toUpperCase(), null, 'left', false), 
                             c(moneyVal(sysTotal), null, 'center', false), 
-                            c(summaryNotes[sys.id] || '', null, 'left', false)
+                            c(getSummaryNote(sys, floor.id, ''), null, 'left', false)
                         ]); r3++;
                     });
                 });
@@ -767,7 +795,7 @@
                             c(currentSTT++, null, 'center', true), 
                             c(sys.name.toUpperCase(), null, 'left', true), 
                             c(moneyVal(sysTotal), null, 'center', true), 
-                            c(summaryNotes[sys.id] !== undefined ? summaryNotes[sys.id] : defaultNote, null, 'left', false)
+                            c(getSummaryNote(sys, 'common', defaultNote), null, 'left', false)
                         ]); r3++;
                     });
                 }
@@ -1270,7 +1298,7 @@
                                                 </td>
                                                 <td className="border border-black p-1 align-middle break-words min-w-0">
                                                     <EditableInput value={item.name} onChange={v => { const newD = [...audioData]; newD[idx].name = v; setAudioData(newD); }} className="font-bold" isEditing={!isPreview} />
-                                                    <EditableInput value={item.desc} onChange={v => { const newD = [...audioData]; newD[idx].desc = v; setAudioData(newD); }} className="text-[12px] mt-1 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                    <EditableInput value={item.desc} onChange={v => { const newD = [...audioData]; newD[idx].desc = v; setAudioData(newD); }} placeholder="Mô tả / Ghi chú chi tiết..." className="text-[12px] mt-1 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
                                                 </td>
                                                 <td className="border border-black p-1 text-center align-middle w-12">
                                                     <EditableInput value={item.unit} onChange={v => { const newD = [...audioData]; newD[idx].unit = v; setAudioData(newD); }} className="text-center" isEditing={!isPreview} />
@@ -1328,7 +1356,7 @@
                                                 </td>
                                                 <td className="border border-black p-1 align-middle break-words min-w-0">
                                                     <EditableInput value={item.name} onChange={v => { const newD = [...extraOptionData]; newD[idx].name = v; setExtraOptionData(newD); }} className="font-bold" isEditing={!isPreview} />
-                                                    <EditableInput value={item.desc} onChange={v => { const newD = [...extraOptionData]; newD[idx].desc = v; setExtraOptionData(newD); }} className="text-[12px] mt-1 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                    <EditableInput value={item.desc} onChange={v => { const newD = [...extraOptionData]; newD[idx].desc = v; setExtraOptionData(newD); }} placeholder="Mô tả / Ghi chú chi tiết..." className="text-[12px] mt-1 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
                                                 </td>
                                                 <td className="border border-black p-1 text-center align-middle w-12">
                                                     <EditableInput value={item.unit} onChange={v => { const newD = [...extraOptionData]; newD[idx].unit = v; setExtraOptionData(newD); }} className="text-center" isEditing={!isPreview} />
@@ -1405,7 +1433,7 @@
                                                                 className="uppercase font-medium"
                                                             />
                                                             <EditableInput 
-                                                                value={summaryNotes[sys.id] || ''} 
+                                                                value={getSummaryNote(sys, floor.id, '')} 
                                                                 onChange={(v) => setSummaryNotes(prev => ({...prev, [sys.id]: v}))} 
                                                                 placeholder="Ghi chú..." 
                                                                 isTextArea={true} 
@@ -1436,7 +1464,7 @@
                                                     className="uppercase font-bold"
                                                 />
                                                 <EditableInput 
-                                                    value={summaryNotes[sys.id] !== undefined ? summaryNotes[sys.id] : defaultNote} 
+                                                    value={getSummaryNote(sys, 'common', defaultNote)} 
                                                     onChange={(v) => setSummaryNotes(prev => ({...prev, [sys.id]: v}))} 
                                                     placeholder="Ghi chú..." 
                                                     isTextArea={true} 
@@ -1513,7 +1541,7 @@
                                                         <div className="font-bold">
                                                             <EditableInput value={item.name} onChange={v => { const newD = [...audioData]; newD[idx].name = v; setAudioData(newD); }} isEditing={!isPreview} />
                                                         </div>
-                                                        <EditableInput value={item.desc} onChange={v => { const newD = [...audioData]; newD[idx].desc = v; setAudioData(newD); }} className="text-[12px] mt-0.5 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                        <EditableInput value={item.desc} onChange={v => { const newD = [...audioData]; newD[idx].desc = v; setAudioData(newD); }} placeholder="Ghi chú / Mô tả chi tiết..." className="text-[12px] mt-0.5 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
                                                     </td>
                                                     <td className="border border-black p-1 text-center align-middle w-32 font-bold">{formatMoney(itemTotal)}</td>
                                                 </tr>
@@ -1554,7 +1582,7 @@
                                                         <div className="font-bold">
                                                             <EditableInput value={item.name} onChange={v => { const newD = [...extraOptionData]; newD[idx].name = v; setExtraOptionData(newD); }} isEditing={!isPreview} />
                                                         </div>
-                                                        <EditableInput value={item.desc} onChange={v => { const newD = [...extraOptionData]; newD[idx].desc = v; setExtraOptionData(newD); }} className="text-[12px] mt-0.5 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
+                                                        <EditableInput value={item.desc} onChange={v => { const newD = [...extraOptionData]; newD[idx].desc = v; setExtraOptionData(newD); }} placeholder="Ghi chú / Mô tả chi tiết..." className="text-[12px] mt-0.5 text-gray-700 leading-tight" isTextArea={true} isEditing={!isPreview} />
                                                     </td>
                                                     <td className="border border-black p-1 text-center align-middle w-32 font-bold">{formatMoney(itemTotal)}</td>
                                                 </tr>
