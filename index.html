@@ -86,7 +86,9 @@
                 'info': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>,
                 'file-spreadsheet': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>,
                 'chevron-up': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>,
-                'chevron-down': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                'chevron-down': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>,
+                'chevron-left': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>,
+                'chevron-right': <svg className={className} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
             };
             return icons[name] || null;
         };
@@ -895,16 +897,31 @@
             };
 
             const addFloor = () => {
-                const newId = `t${bomMap.floors.length + 1}`;
+                const newId = `fl_${Date.now()}`;
                 setBomMap(prev => {
                     let newFloors = [...prev.floors];
-                    newFloors.push({ id: newId, name: `Tầng ${prev.floors.length + 1}` });
+                    newFloors.push({ id: newId, name: `Tầng ${prev.floors.length}` });
                     return { ...prev, floors: newFloors };
                 });
+                showNotification("Đã thêm tầng mới!");
             };
 
             const removeFloor = (floorId) => {
                 setBomMap(prev => ({ ...prev, floors: prev.floors.filter(f => f.id !== floorId) }));
+            };
+
+            const moveFloor = (floorId, direction) => {
+                setBomMap(prev => {
+                    const idx = prev.floors.findIndex(f => f.id === floorId);
+                    if (idx === -1) return prev;
+                    const newFloors = [...prev.floors];
+                    if (direction === 'left' && idx > 0) {
+                        [newFloors[idx - 1], newFloors[idx]] = [newFloors[idx], newFloors[idx - 1]];
+                    } else if (direction === 'right' && idx < newFloors.length - 1) {
+                        [newFloors[idx], newFloors[idx + 1]] = [newFloors[idx + 1], newFloors[idx]];
+                    }
+                    return { ...prev, floors: newFloors };
+                });
             };
 
             const deleteItemFromDetail = (floorId, itemId) => {
@@ -973,7 +990,15 @@
 
                 return (
                     <div className="w-full">
-                        <h2 className="text-lg font-bold text-center mb-4 uppercase">BẢNG THỐNG KÊ KHỐI LƯỢNG THIẾT BỊ (BOM)</h2>
+                        <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
+                            <div className="w-36 hidden sm:block"></div>
+                            <h2 className="text-lg font-bold text-center uppercase flex-1">BẢNG THỐNG KÊ KHỐI LƯỢNG THIẾT BỊ (BOM)</h2>
+                            <div className={`print-hidden no-print ${isPreview ? 'hidden' : 'block'}`}>
+                                <button onClick={addFloor} className="flex items-center px-3.5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md text-xs font-bold transition-all">
+                                    <Icon name="plus" className="w-3.5 h-3.5 mr-1.5" /> Thêm Tầng Mới
+                                </button>
+                            </div>
+                        </div>
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse border border-black min-w-[800px] text-[12px]">
                                 <thead>
@@ -981,14 +1006,36 @@
                                         <td className="border border-black p-1 text-center w-10">STT</td>
                                         <td className="border border-black p-1 min-w-[220px]">Hạng mục</td>
                                         <td className="border border-black p-1 text-center w-12">Đơn vị</td>
-                                        {bomMap.floors.map(f => (
-                                            <td key={f.id} className="border border-black p-1 text-center w-16 group relative">
+                                        {bomMap.floors.map((f, fIdx) => (
+                                            <td key={f.id} className="border border-black p-1 text-center w-20 group relative align-middle">
+                                                <div className={`flex items-center justify-between mb-0.5 print-hidden no-print ${isPreview ? 'hidden' : 'flex'}`}>
+                                                    <button 
+                                                        onClick={() => moveFloor(f.id, 'left')} 
+                                                        disabled={fIdx === 0}
+                                                        className={`p-0.5 rounded hover:bg-green-300/60 transition-colors ${fIdx === 0 ? 'opacity-20 cursor-not-allowed' : 'text-gray-700 hover:text-blue-700'}`}
+                                                        title="Di chuyển tầng sang trái"
+                                                    >
+                                                        <Icon name="chevron-left" className="w-3 h-3" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => removeFloor(f.id)} 
+                                                        className="text-red-500 opacity-0 group-hover:opacity-100 bg-white/80 hover:bg-red-50 rounded-full p-0.5 shadow-sm transition-opacity"
+                                                        title="Xóa tầng này"
+                                                    >
+                                                        <Icon name="x" className="w-3 h-3" />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => moveFloor(f.id, 'right')} 
+                                                        disabled={fIdx === bomMap.floors.length - 1}
+                                                        className={`p-0.5 rounded hover:bg-green-300/60 transition-colors ${fIdx === bomMap.floors.length - 1 ? 'opacity-20 cursor-not-allowed' : 'text-gray-700 hover:text-blue-700'}`}
+                                                        title="Di chuyển tầng sang phải"
+                                                    >
+                                                        <Icon name="chevron-right" className="w-3 h-3" />
+                                                    </button>
+                                                </div>
                                                 <EditableInput value={f.name} onChange={(v) => {
                                                     setBomMap({...bomMap, floors: bomMap.floors.map(fl => fl.id === f.id ? {...fl, name: v} : fl)});
                                                 }} className="text-center font-bold" isEditing={!isPreview} />
-                                                <button onClick={() => removeFloor(f.id)} className={`absolute -top-2 -right-2 text-red-500 opacity-0 group-hover:opacity-100 bg-white rounded-full border shadow print-hidden ${isPreview ? 'hidden' : 'block'}`}>
-                                                    <Icon name="x" className="w-4 h-4" />
-                                                </button>
                                             </td>
                                         ))}
                                         <td className="border border-black p-1 text-center w-12">Tổng</td>
@@ -1150,11 +1197,6 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            <div className={`mt-2 print-hidden no-print ${isPreview ? 'hidden' : 'block'}`}>
-                                <button onClick={addFloor} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 shadow text-xs font-bold">
-                                    <Icon name="plus" className="w-3 h-3 mr-2" /> Thêm Tầng Mới
-                                </button>
-                            </div>
                         </div>
                     </div>
                 );
@@ -1180,13 +1222,21 @@
                             <tbody>
                                 {detailedData.map((floor) => (
                                     <Fragment key={floor.id}>
-                                        <tr className="bg-[#e2efda] font-bold text-sm avoid-break keep-with-next">
-                                            <td colSpan={8} className="border border-black p-1.5 uppercase pl-2">
-                                                <EditableInput value={floor.name} onChange={(v) => {
-                                                    if (floor.id !== 'common') {
-                                                        setBomMap({...bomMap, floors: bomMap.floors.map(fl => fl.id === floor.id ? {...fl, name: v} : fl)});
-                                                    }
-                                                }} isEditing={!isPreview && floor.id !== 'common'} className="font-bold uppercase" />
+                                        <tr className="bg-[#e2efda] font-bold text-sm avoid-break keep-with-next group">
+                                            <td colSpan={8} className="border border-black p-1.5 uppercase pl-2 relative">
+                                                <div className="flex items-center gap-2">
+                                                    {floor.id !== 'common' && !isPreview && (
+                                                        <div className="flex items-center gap-0.5 print-hidden no-print">
+                                                            <button onClick={() => moveFloor(floor.id, 'left')} className="p-0.5 rounded hover:bg-green-300/60 text-gray-700 hover:text-blue-700" title="Đẩy tầng lên trên"><Icon name="chevron-up" className="w-3.5 h-3.5" /></button>
+                                                            <button onClick={() => moveFloor(floor.id, 'right')} className="p-0.5 rounded hover:bg-green-300/60 text-gray-700 hover:text-blue-700" title="Kéo tầng xuống dưới"><Icon name="chevron-down" className="w-3.5 h-3.5" /></button>
+                                                        </div>
+                                                    )}
+                                                    <EditableInput value={floor.name} onChange={(v) => {
+                                                        if (floor.id !== 'common') {
+                                                            setBomMap({...bomMap, floors: bomMap.floors.map(fl => fl.id === floor.id ? {...fl, name: v} : fl)});
+                                                        }
+                                                    }} isEditing={!isPreview && floor.id !== 'common'} className="font-bold uppercase flex-1" />
+                                                </div>
                                             </td>
                                         </tr>
                                         {floor.systems.map((system, sysIndex) => (
@@ -1415,9 +1465,22 @@
                                     
                                     return (
                                         <Fragment key={floor.id}>
-                                            <tr className="font-bold bg-gray-50 avoid-break keep-with-next">
-                                                <td className="border border-black p-1 text-center">{currentSTT++}</td>
-                                                <td className="border border-black p-1 uppercase">{floor.name}</td>
+                                            <tr className="font-bold bg-gray-50 avoid-break keep-with-next group">
+                                                <td className="border border-black p-1 text-center relative">
+                                                    {currentSTT++}
+                                                    {!isPreview && (
+                                                        <div className="absolute top-0 bottom-0 left-0 w-4 flex flex-col justify-center items-center opacity-0 group-hover:opacity-100 print-hidden no-print bg-gray-100 border-r border-gray-300">
+                                                            <button onClick={() => moveFloor(floor.id, 'left')} className="text-gray-600 hover:text-blue-600 p-0.5" title="Đẩy tầng lên trên"><Icon name="chevron-up" className="w-3 h-3" /></button>
+                                                            <div className="h-px bg-gray-300 w-full"></div>
+                                                            <button onClick={() => moveFloor(floor.id, 'right')} className="text-gray-600 hover:text-blue-600 p-0.5" title="Kéo tầng xuống dưới"><Icon name="chevron-down" className="w-3 h-3" /></button>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="border border-black p-1 uppercase">
+                                                    <EditableInput value={floor.name} onChange={(v) => {
+                                                        setBomMap({...bomMap, floors: bomMap.floors.map(fl => fl.id === floor.id ? {...fl, name: v} : fl)});
+                                                    }} isEditing={!isPreview} className="font-bold uppercase" />
+                                                </td>
                                                 <td className="border border-black p-1 text-center">{formatMoney(floorTotal)}</td>
                                             </tr>
                                             {floor.systems.map((sys) => {
